@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+
+  <title>clouds</title>
+
+  <style>
+      body {
+          margin: 0;
+          background: #f0f0f0;
+          overflow: hidden;
+          overscroll-behavior-x: none;
+      }
+
+      #container {
+          width: 100vw;
+          height: 100vh;
+      }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+
+<script type="module">
+  // заменяется Vite
+  const mode = '%MODE%';
+  let url;
+
+  if (mode === 'development') {
+    url = './src/index.js';
+  } else {
+    url = './build/clouds.js';
+  }
+
+  import(/* @vite-ignore */ url).then(module => {
+    const CloudsDemo = module.default;
+
+    const container = document.querySelector('#container');
+    const demo = new CloudsDemo(container);
+  });
+</script>
+</body>
+</html>

@@ -18214,7 +18214,7 @@ class Ad extends $n {
 }
 class wd {
   constructor(t) {
-    this.container = t, this.init3D(), this.initObjects(), this.cloudsUpisfree = new Ed(this.camera), location.href.includes("upisfree") && this.scene.add(this.cloudsUpisfree), this.cloudsShadertoy = new Ad(this.camera), location.href.includes("shadertoy") && this.scene.add(this.cloudsShadertoy), this.update();
+    this.container = t, this.init3D(), this.initObjects(), this.cloudsUpisfree = new Ed(this.camera), location.search.includes("upisfree") && this.scene.add(this.cloudsUpisfree), this.cloudsShadertoy = new Ad(this.camera), location.search.includes("shadertoy") && this.scene.add(this.cloudsShadertoy), this.update();
   }
   init3D() {
     this.renderer = new id({
@@ -18226,7 +18226,7 @@ class wd {
       -2.49,
       0.42,
       2.83
-    ), location.href.includes("upisfree") && (this.camera.position.set(
+    ), location.search.includes("upisfree") && (this.camera.position.set(
       80,
       9,
       -135

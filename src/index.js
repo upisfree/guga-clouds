@@ -1,5 +1,5 @@
 import {
-  AmbientLight, BoxGeometry, CircleGeometry, Color, CylinderGeometry, DirectionalLight,
+  AmbientLight, BoxGeometry, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight,
   DoubleSide, IcosahedronGeometry, LatheGeometry,
   Mesh,
   MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping, OctahedronGeometry,
@@ -9,6 +9,8 @@ import {
   WebGLRenderer
 } from 'three';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
+import CloudsUpisfree from './clouds-upisfree';
+import CloudsShadertoy from './clouds-shadertoy';
 
 class CloudsDemo {
   constructor(container) {
@@ -16,6 +18,19 @@ class CloudsDemo {
 
     this.init3D();
     this.initObjects();
+
+    this.cloudsUpisfree = new CloudsUpisfree(this.camera);
+
+    if (location.href.includes('upisfree')) {
+      this.scene.add(this.cloudsUpisfree);
+    }
+
+    this.cloudsShadertoy = new CloudsShadertoy(this.camera);
+
+    if (location.href.includes('shadertoy')) {
+      this.scene.add(this.cloudsShadertoy);
+    }
+
     this.update();
   }
 
@@ -36,7 +51,9 @@ class CloudsDemo {
     this.renderer.toneMapping = NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.5;
 
-    this.camera = new PerspectiveCamera(60, 1, 0.1, 10_000);
+    this.clock = new Clock();
+
+    this.camera = new PerspectiveCamera(60, 1, 0.1, 1000000);
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
     this.controls.settings.general.mode = ControlMode.FIRST_PERSON;
@@ -47,10 +64,23 @@ class CloudsDemo {
 
     this.camera.position.set(343, 371, -536);
     this.camera.rotation.set(
-      -2.493823990760082,
-      0.42612218398166946,
-      2.838459807557068
+      -2.49,
+      0.42,
+      2.83,
     );
+
+    if (location.href.includes('upisfree')) {
+      this.camera.position.set(
+        80,
+        9,
+        -135
+      );
+      this.camera.rotation.set(
+      -2.8565540938041662,
+      0.4430787851422483,
+      3.01662397220497
+      );
+    }
 
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
@@ -71,6 +101,9 @@ class CloudsDemo {
     requestAnimationFrame(this.update.bind(this));
 
     this.controls.update(timestamp);
+
+    this.cloudsUpisfree.update();
+    this.cloudsShadertoy.update();
 
     this.render();
   }
@@ -99,8 +132,6 @@ class CloudsDemo {
       flatShading: true,
       side: DoubleSide
     });
-
-    console.log(material)
 
     let object = new Mesh(new SphereGeometry(75, 20, 10), material);
     object.position.set(-300, 0, 200);

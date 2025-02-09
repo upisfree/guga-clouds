@@ -21,13 +21,13 @@ class CloudsDemo {
 
     this.cloudsUpisfree = new CloudsUpisfree(this.camera);
 
-    if (location.href.includes('upisfree')) {
+    if (location.search.includes('upisfree')) {
       this.scene.add(this.cloudsUpisfree);
     }
 
     this.cloudsShadertoy = new CloudsShadertoy(this.camera);
 
-    if (location.href.includes('shadertoy')) {
+    if (location.search.includes('shadertoy')) {
       this.scene.add(this.cloudsShadertoy);
     }
 
@@ -69,7 +69,7 @@ class CloudsDemo {
       2.83,
     );
 
-    if (location.href.includes('upisfree')) {
+    if (location.search.includes('upisfree')) {
       this.camera.position.set(
         80,
         9,

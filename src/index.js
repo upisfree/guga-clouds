@@ -1,6 +1,6 @@
 import {
   AmbientLight, BoxGeometry, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight,
-  DoubleSide, IcosahedronGeometry, LatheGeometry,
+  DoubleSide, GridHelper, IcosahedronGeometry, LatheGeometry,
   Mesh,
   MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping, OctahedronGeometry,
   PerspectiveCamera, PlaneGeometry, RingGeometry,
@@ -84,6 +84,9 @@ class CloudsDemo {
 
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
+
+    const gridHelper = new GridHelper(10000, 150);
+    // this.scene.add(gridHelper);
 
     this.initLights();
   }

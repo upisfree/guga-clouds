@@ -1,22 +1,32 @@
 import {
-  AmbientLight, BoxGeometry, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight,
+  AmbientLight, BoxGeometry, CircleGeometry, Clock, Color, CylinderGeometry, DepthTexture, DirectionalLight,
   DoubleSide, GridHelper, IcosahedronGeometry, LatheGeometry,
+  Matrix3,
+  Matrix4,
   Mesh,
   MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping, OctahedronGeometry,
+  OrthographicCamera,
   PerspectiveCamera, PlaneGeometry, RingGeometry,
   Scene,
+  ShaderMaterial,
   SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, Vector2,
-  WebGLRenderer
+  Vector3,
+  WebGLRenderer,
+  WebGLRenderTarget
 } from 'three';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import CloudsUpisfree from './clouds-upisfree';
 import CloudsShadertoy from './clouds-shadertoy';
+import abPostVS from './ab-post.vertex.glsl?raw';
+import abPostFS from './ab-post.frag.glsl?raw';
+import { degToRad } from 'three/src/math/MathUtils.js';
 
 class CloudsDemo {
   constructor(container) {
     this.container = container;
 
     this.init3D();
+    this.initPost()
     this.initObjects();
 
     this.cloudsUpisfree = new CloudsUpisfree(this.camera);
@@ -40,7 +50,8 @@ class CloudsDemo {
       powerPreference: 'high-performance',
       antialias: true,
       alpha: false,
-      logarithmicDepthBuffer: true
+      // TODO: Адаптировать шейдер для логарифмического буфера глубины или отказаться от логарифмического буфера глубины (?)
+      // logarithmicDepthBuffer: true
     });
     this.container.appendChild(this.renderer.domElement);
 
@@ -53,7 +64,7 @@ class CloudsDemo {
 
     this.clock = new Clock();
 
-    this.camera = new PerspectiveCamera(60, 1, 0.1, 1000000);
+    this.camera = new PerspectiveCamera(60, 1, 0.1, 10000);
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
     this.controls.settings.general.mode = ControlMode.FIRST_PERSON;
@@ -62,11 +73,15 @@ class CloudsDemo {
     this.controls.settings.translation.boostMultiplier = 10;
     this.controls.settings.rotation.sensitivity = 2.5;
 
-    this.camera.position.set(343, 371, -536);
+    // this.camera.position.set(343, 371, -536);
+    // this.camera.rotation.set(
+    //   -2.49,
+    //   0.42,
+    //   2.83,
+    // );
+    this.camera.position.set(0, 0, 100);
     this.camera.rotation.set(
-      -2.49,
-      0.42,
-      2.83,
+      0,0,0
     );
 
     if (location.search.includes('upisfree')) {
@@ -86,9 +101,36 @@ class CloudsDemo {
     window.addEventListener('resize', this.resize.bind(this));
 
     const gridHelper = new GridHelper(10000, 150);
-    // this.scene.add(gridHelper);
+    this.scene.add(gridHelper);
 
     this.initLights();
+  }
+
+  initPost() {
+    console.log(this.renderer.getPixelRatio());
+    this.rt = new WebGLRenderTarget(this.renderer.getPixelRatio() * window.innerWidth, this.renderer.getPixelRatio() * window.innerHeight);
+    this.rt.depthTexture = new DepthTexture(this.rt.width, this.rt.height);
+
+    this.postCamera = new OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
+    this.postMaterial = new ShaderMaterial({
+      vertexShader: abPostVS,
+      fragmentShader: abPostFS,
+      uniforms: {
+        worldCameraNear: { value: this.camera.near },
+        worldCameraFar: { value: this.camera.far },
+        worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
+        viewportSizeInverse: { value: new Vector2(1/this.rt.width, 1/this.rt.height) },
+        aspectRatio: { value: window.innerWidth / window.innerHeight },
+        worldCameraHalfFovSin: { value: Math.sin(degToRad(this.camera.fov)) * 1.25 },
+        worldCameraNormalMatrix: { value: new Matrix3().getNormalMatrix(this.camera.matrixWorld) },
+        worldCameraWorldMatrix: { value: this.camera.matrixWorld },
+        worldCameraProjectionMatrixInverse: { value: this.camera.projectionMatrixInverse },
+        tDiffuse: { value: null },
+        tDepth: { value: null },
+      }
+    });
+    this.postScene = new Scene();
+    this.postScene.add(new Mesh(new PlaneGeometry(2,2), this.postMaterial));
   }
 
   initLights() {
@@ -112,7 +154,16 @@ class CloudsDemo {
   }
 
   render() {
+    this.renderer.setRenderTarget(this.rt);
     this.renderer.render(this.scene, this.camera);
+    this.renderer.setRenderTarget(null);
+    this.postMaterial.uniforms.tDiffuse.value = this.rt.texture;
+    this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
+    this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
+    this.postMaterial.uniforms.worldCameraNormalMatrix.value = new Matrix3().getNormalMatrix(this.camera.matrixWorld);
+    this.postMaterial.uniforms.worldCameraProjectionMatrixInverse.value = this.camera.projectionMatrixInverse;
+    this.postMaterial.uniforms.worldCameraWorldMatrix.value = this.camera.matrixWorld;
+    this.renderer.render(this.postScene, this.postCamera);
   }
 
   resize() {

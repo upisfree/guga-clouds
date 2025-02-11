@@ -1,14 +1,32 @@
 import {
-  AmbientLight, BoxGeometry, CircleGeometry, Clock, Color, CylinderGeometry, DirectionalLight,
-  DoubleSide, GridHelper, IcosahedronGeometry, LatheGeometry,
+  AmbientLight,
+  BoxGeometry,
+  CircleGeometry,
+  Clock,
+  Color,
+  CylinderGeometry,
+  DirectionalLight,
+  DoubleSide,
+  GridHelper,
+  IcosahedronGeometry,
+  LatheGeometry,
   Mesh,
-  MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping, OctahedronGeometry,
-  PerspectiveCamera, PlaneGeometry, RingGeometry,
+  MeshStandardMaterial,
+  NeutralToneMapping,
+  OctahedronGeometry,
+  PerspectiveCamera,
+  PlaneGeometry,
+  RingGeometry,
   Scene,
-  SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, Vector2,
+  SphereGeometry,
+  TetrahedronGeometry,
+  TorusGeometry,
+  TorusKnotGeometry,
+  Vector2,
   WebGLRenderer
 } from 'three';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
+import { Pane } from 'tweakpane';
 import CloudsUpisfree from './clouds-upisfree';
 import CloudsShadertoy from './clouds-shadertoy';
 
@@ -19,13 +37,15 @@ class CloudsDemo {
     this.init3D();
     this.initObjects();
 
-    this.cloudsUpisfree = new CloudsUpisfree(this.camera);
+    this.pane = new Pane();
+
+    this.cloudsUpisfree = new CloudsUpisfree(this.camera, this.pane);
 
     if (location.search.includes('upisfree')) {
       this.scene.add(this.cloudsUpisfree);
     }
 
-    this.cloudsShadertoy = new CloudsShadertoy(this.camera);
+    this.cloudsShadertoy = new CloudsShadertoy(this.camera, this.pane);
 
     if (location.search.includes('shadertoy')) {
       this.scene.add(this.cloudsShadertoy);

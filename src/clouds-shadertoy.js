@@ -260,8 +260,12 @@ void main() {
 `;
 
 class CloudsShadertoy extends Group {
-  constructor() {
+  timeScale = 1;
+
+  constructor(camera, pane) {
     super();
+
+    this.pane = pane;
 
     const textureLoader = new TextureLoader();
     textureLoader.loadAsync('./assets/noise.png').then((noiseTexture) => {
@@ -293,6 +297,8 @@ class CloudsShadertoy extends Group {
       this.position.set(0, 0, 0);
 
       this.add(this.clouds);
+
+      this.initFolder();
     });
   }
 
@@ -302,7 +308,7 @@ class CloudsShadertoy extends Group {
       return;
     }
 
-    this.uniforms.iTime.value = performance.now() / 1000;
+    this.uniforms.iTime.value = performance.now() / 1000 * this.timeScale;
   }
 
   initNoiseTexture(texture) {
@@ -317,6 +323,32 @@ class CloudsShadertoy extends Group {
     cloudsNoise.generateMipmaps = false;
 
     return cloudsNoise;
+  }
+
+  initFolder() {
+    const params = {
+      time: 1,
+      resolution: { x: 1000, y: 1000 }
+    };
+
+    const onChange = () => {
+      this.timeScale = params.time;
+      this.uniforms.iResolution.value.set(params.resolution.x, params.resolution.y);
+    };
+
+    const folder = this.pane.addFolder({
+      title: 'clouds shadertoy',
+      expanded: true,
+    });
+
+    folder.addBinding(params, 'time', {
+      min: -100,
+      max: 100,
+      step: 1,
+      title: 'time scale'
+    }).on('change', onChange);
+
+    folder.addBinding(params, 'resolution').on('change', onChange);
   }
 }
 

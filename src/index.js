@@ -116,15 +116,9 @@ class CloudsDemo {
       vertexShader: abPostVS,
       fragmentShader: abPostFS,
       uniforms: {
-        worldCameraNear: { value: this.camera.near },
-        worldCameraFar: { value: this.camera.far },
         worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
         viewportSizeInverse: { value: new Vector2(1/this.rt.width, 1/this.rt.height) },
-        aspectRatio: { value: window.innerWidth / window.innerHeight },
-        worldCameraHalfFovSin: { value: Math.sin(degToRad(this.camera.fov)) * 1.25 },
-        worldCameraNormalMatrix: { value: new Matrix3().getNormalMatrix(this.camera.matrixWorld) },
-        worldCameraWorldMatrix: { value: this.camera.matrixWorld },
-        worldCameraProjectionMatrixInverse: { value: this.camera.projectionMatrixInverse },
+        worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
         tDiffuse: { value: null },
         tDepth: { value: null },
       }
@@ -160,9 +154,7 @@ class CloudsDemo {
     this.postMaterial.uniforms.tDiffuse.value = this.rt.texture;
     this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
     this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
-    this.postMaterial.uniforms.worldCameraNormalMatrix.value = new Matrix3().getNormalMatrix(this.camera.matrixWorld);
-    this.postMaterial.uniforms.worldCameraProjectionMatrixInverse.value = this.camera.projectionMatrixInverse;
-    this.postMaterial.uniforms.worldCameraWorldMatrix.value = this.camera.matrixWorld;
+    this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
     this.renderer.render(this.postScene, this.postCamera);
   }
 

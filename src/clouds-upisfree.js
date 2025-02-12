@@ -378,10 +378,11 @@ void main() {
 `;
 
 class CloudsUpisfree extends Group {
-  constructor(camera) {
+  constructor(camera, pane) {
     super();
 
     this.camera = camera;
+    this.pane = pane;
 
     const textureLoader = new TextureLoader();
     textureLoader.loadAsync('./assets/noise.png').then((noiseTexture) => {
@@ -419,7 +420,34 @@ class CloudsUpisfree extends Group {
       this.position.set(0, 0, 0);
 
       this.add(this.clouds);
+
+      this.initFolder();
     });
+  }
+
+  initFolder() {
+    const params = {
+      time: 0,
+      resolution: { x: 800, y: 450 }
+    };
+
+    const onChange = () => {
+      this.material.uniforms.iTime.value = params.time;
+      this.material.uniforms.iResolution.value.set(params.resolution.x, params.resolution.y);
+    };
+
+    const folder = this.pane.addFolder({
+      title: 'clouds upisfree',
+      expanded: false,
+    });
+
+    folder.addBinding(params, 'time', {
+      min: 0,
+      max: 10000,
+      step: 1
+    }).on('change', onChange);
+
+    folder.addBinding(params, 'resolution').on('change', onChange);
   }
 
   update() {

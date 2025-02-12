@@ -1,25 +1,44 @@
 import {
-  AmbientLight, BoxGeometry, CircleGeometry, Clock, Color, CylinderGeometry, DepthTexture, DirectionalLight,
-  DoubleSide, GridHelper, IcosahedronGeometry, LatheGeometry,
   Matrix3,
   Matrix4,
-  Mesh,
-  MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping, OctahedronGeometry,
+  MeshPhongMaterial,
   OrthographicCamera,
-  PerspectiveCamera, PlaneGeometry, RingGeometry,
-  Scene,
   ShaderMaterial,
-  SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, Vector2,
   Vector3,
-  WebGLRenderer,
-  WebGLRenderTarget
+  DepthTexture,
+  WebGLRenderTarget,
+  AmbientLight,
+  BoxGeometry,
+  CircleGeometry,
+  Clock,
+  Color,
+  CylinderGeometry,
+  DirectionalLight,
+  DoubleSide,
+  GridHelper,
+  IcosahedronGeometry,
+  LatheGeometry,
+  Mesh,
+  MeshStandardMaterial,
+  NeutralToneMapping,
+  OctahedronGeometry,
+  PerspectiveCamera,
+  PlaneGeometry,
+  RingGeometry,
+  Scene,
+  SphereGeometry,
+  TetrahedronGeometry,
+  TorusGeometry,
+  TorusKnotGeometry,
+  Vector2,
+  WebGLRenderer
 } from 'three';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
+import { Pane } from 'tweakpane';
 import CloudsUpisfree from './clouds-upisfree';
 import CloudsShadertoy from './clouds-shadertoy';
 import abPostVS from './ab-post.vertex.glsl?raw';
 import abPostFS from './ab-post.frag.glsl?raw';
-import { degToRad } from 'three/src/math/MathUtils.js';
 
 class CloudsDemo {
   constructor(container) {
@@ -29,13 +48,15 @@ class CloudsDemo {
     this.initPost()
     this.initObjects();
 
-    this.cloudsUpisfree = new CloudsUpisfree(this.camera);
+    this.pane = new Pane();
+
+    this.cloudsUpisfree = new CloudsUpisfree(this.camera, this.pane);
 
     if (location.search.includes('upisfree')) {
       this.scene.add(this.cloudsUpisfree);
     }
 
-    this.cloudsShadertoy = new CloudsShadertoy(this.camera);
+    this.cloudsShadertoy = new CloudsShadertoy(this.camera, this.pane);
 
     if (location.search.includes('shadertoy')) {
       this.scene.add(this.cloudsShadertoy);

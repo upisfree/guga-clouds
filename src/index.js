@@ -41,6 +41,8 @@ class CloudsDemo {
       this.scene.add(this.cloudsShadertoy);
     }
 
+    this.clock = new Clock(true);
+
     this.update();
   }
 
@@ -79,7 +81,7 @@ class CloudsDemo {
     //   0.42,
     //   2.83,
     // );
-    this.camera.position.set(0, 0, 100);
+    this.camera.position.set(0, 50, 100);
     this.camera.rotation.set(
       0,0,0
     );
@@ -121,6 +123,7 @@ class CloudsDemo {
         worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
         tDiffuse: { value: null },
         tDepth: { value: null },
+        timeSeconds: { value: 0 },
       }
     });
     this.postScene = new Scene();
@@ -155,6 +158,7 @@ class CloudsDemo {
     this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
     this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
     this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
+    this.postMaterial.uniforms.timeSeconds.value = this.clock.getElapsedTime();
     this.renderer.render(this.postScene, this.postCamera);
   }
 

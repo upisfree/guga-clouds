@@ -7,7 +7,19 @@ uniform vec3 worldCameraPosition;
 uniform mat4 worldCameraUnprojectionMatrix;
 uniform float timeSeconds;
 
+uniform float densityThreshold;
+uniform float ditherDepth;
+uniform float cloudsScale;
+uniform float maxRMDistance;
+uniform float cloudsAltitude;
+uniform vec3 color1;
+uniform vec3 color2;
+uniform vec3 color3;
+uniform vec3 color4;
+
 #define DITHERING
+#define IQLIGHT
+#define IQCOLOUR
 
 
 // implementation found at: lumina.sourceforge.net/Tutorials/Noise.html
@@ -63,7 +75,9 @@ float SpiralNoise3D(vec3 p) {
   return n;
 }
 
-float Clouds(vec3 p) { 
+float Clouds(vec3 p) {
+  p.y -= cloudsAltitude;
+  p /= cloudsScale;
   float final = p.y + 4.5;
     
   final -= SpiralNoiseC(p.xyz);  // mid-range noise
@@ -71,7 +85,7 @@ float Clouds(vec3 p) {
   final -= SpiralNoise3D(p); // more large scale features, but 3d, so not just a height map.
   final -= SpiralNoise3D(p*49.0)*0.0625*0.125; // small scale noise for variation
 
-  return final;
+  return final * cloudsScale;
 }
 
 void main() {
@@ -110,21 +124,19 @@ void main() {
     float dist = 0.0;
 
     // Max. distance from camera in world units
-    float max_dist = 2000.0;
+    float max_dist = maxRMDistance;
     max_dist = min(max_dist, l);
 
 #ifdef DITHERING
-    dist = 1.0 + 0.2 * random(screen_offset + fract(timeSeconds));
+    dist = 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
     pos += dist * dir;
 #endif
 
-    vec3 sundir = normalize( vec3(-1.0,0.75,1.0) );
+    vec3 sundir = normalize( vec3(-1.0,1.0,0.75) );
 
   
     // background sky     
     float sun = clamp(dot(sundir, dir), 0.0, 1.0);
-    vec3 bgcol = vec3(0.6, 0.71, 0.75) - dir.y * 0.2 * vec3(1.0, 0.5, 1.0) + 0.15 * 0.5;
-    bgcol += 0.2 * vec3(1.0, 0.6, 0.1) * pow(sun, 8.0);
     
     vec4 sum = vec4(0.0);
     float ld = 0.0, td = 0.0;
@@ -133,9 +145,9 @@ void main() {
         float d = Clouds(pos) * 0.326;
         d = max(d, -0.4);
 
-        if(td>(1.-1./80.) || d<0.0006*dist || sum.a > 0.99) break;
+        if(td>(1.-1./80.) || sum.a > 0.99) break;
 
-        if (d < 0.4) {
+        if (d < densityThreshold) {
             // compute local density and weighting factor 
             float ld = 0.1 - d;
 
@@ -152,16 +164,12 @@ void main() {
             // accumulate density
             td += w;// + 1./90.;
 
-            vec3 lin = vec3(0.65,0.68,0.7)*1.3 + 0.5*vec3(0.7, 0.5, 0.3)*ld;
+            vec3 lin = color1 + color2*ld;
 
-            #ifdef IQCOLOUR
-            vec4 col = vec4( mix( 1.15*vec3(1.0,0.95,0.8), vec3(0.765), d ), max(kmaxdist,d) );
-            #else
-            vec4 col = vec4(vec3(1./exp( d * 0.2 ) * 1.05), max(kmaxdist,d));
-            #endif
+            vec4 col = vec4( mix( 1.15*color3, vec3(0.765), d ), max(kmaxdist,d) );
 
             col.xyz *= lin;
-            col.xyz = mix( col.xyz, color, 1.0-exp(-0.0004*dist*dist) );
+            col.xyz = mix( col.xyz, color, 1.0-exp(-0.00000004*dist*dist) );
             // front to back blending    
             col.a *= 0.4;
             col.rgb *= col.a;
@@ -169,19 +177,21 @@ void main() {
         }
 
 #ifdef DITHERING
-        d *= 1.0 + 0.28 * random(screen_offset * dist);
+        d *= 1.0 + ditherDepth * random(screen_offset * dist);
 #endif
+        // d = min(max_dist - dist - 0.01, d);
         d = max(0.04, d);
         dist += d;
         pos += dir * d;
     }
 
     sum = clamp( sum, 0.0, 1.0 );
-    vec3 col = vec3(0.6,0.71,0.75) - dir.y*0.2*vec3(1.0,0.5,1.0) + 0.15*0.5;
+    // vec3 col = vec3(0.6,0.71,0.75) - dir.z*0.2*vec3(1.0,0.5,1.0) + 0.15*0.5;
+    vec3 col = color;
     col = col*(1.0-sum.w) + sum.xyz;
 
     // sun glare    
-    // col += 0.1*vec3(1.0,0.4,0.2)*pow( sun, 3.0 );
+    col += 0.1*vec3(1.0,0.4,0.2)*pow( sun, 3.0 );
 
     gl_FragColor.rgb = col.rgb;
     // gl_FragColor.rgb = mix(cloudColor, color, transparency);

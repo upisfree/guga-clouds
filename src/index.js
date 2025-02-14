@@ -49,18 +49,19 @@ class CloudsDemo {
     this.initObjects();
 
     this.pane = new Pane();
+    this.initPane();
 
-    this.cloudsUpisfree = new CloudsUpisfree(this.camera, this.pane);
+    // this.cloudsUpisfree = new CloudsUpisfree(this.camera, this.pane);
 
-    if (location.search.includes('upisfree')) {
-      this.scene.add(this.cloudsUpisfree);
-    }
+    // if (location.search.includes('upisfree')) {
+    //   this.scene.add(this.cloudsUpisfree);
+    // }
 
-    this.cloudsShadertoy = new CloudsShadertoy(this.camera, this.pane);
+    // this.cloudsShadertoy = new CloudsShadertoy(this.camera, this.pane);
 
-    if (location.search.includes('shadertoy')) {
-      this.scene.add(this.cloudsShadertoy);
-    }
+    // if (location.search.includes('shadertoy')) {
+    //   this.scene.add(this.cloudsShadertoy);
+    // }
 
     this.clock = new Clock(true);
 
@@ -123,10 +124,62 @@ class CloudsDemo {
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
 
-    const gridHelper = new GridHelper(10000, 150);
-    this.scene.add(gridHelper);
+    this.gridHelper = new GridHelper(10000, 150);
+    this.scene.add(this.gridHelper);
 
     this.initLights();
+  }
+
+  initPane() {
+    const cloudsFolder = this.pane.addFolder({title: "Clouds"});
+    cloudsFolder.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
+      label: "Scale",
+      min: 1.0,
+      max: 500.0,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.cloudsAltitude, "value", {
+      label: "Altitude",
+      min: -500,
+      max: 500,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.maxRMDistance, "value", {
+      label: "Max distance",
+      min: 500.0,
+      max: 10000.0,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
+      label: "Density threshold",
+      min: 0.0,
+      max: 4.0,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.ditherDepth, "value", {
+      label: "Dithering depth",
+      min: 0.0,
+      max: 1.0,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.color1, "value", {
+      label: "Color 1",
+      color: { type: 'float' },
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.color2, "value", {
+      label: "Color 2",
+      color: { type: 'float' },
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
+      label: "Color 3",
+      color: { type: 'float' },
+    });
+    // cloudsFolder.addBinding(this.postMaterial.uniforms.color4, "value", {
+    //   label: "Color 4",
+    //   color: { type: 'float' },
+    // });
+
+    const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });
+    helpersFolder.addBinding(this.gridHelper, "visible", { label: "Show grid" });
+    helpersFolder.addBinding(this.scene, "background", {
+      label: "Background",
+      color: { type: 'float' },
+    });
   }
 
   initPost() {
@@ -145,6 +198,17 @@ class CloudsDemo {
         tDiffuse: { value: null },
         tDepth: { value: null },
         timeSeconds: { value: 0 },
+
+        ditherDepth: { value: 0.2 },
+        densityThreshold: { value: 0.6 },
+        cloudsScale: { value: 50.0 },
+        cloudsAltitude: { value: 0.0 },
+        maxRMDistance: { value: 5000.0 },
+
+        color1: { value: new Color().setRGB(0.85, 0.88, 0.9) },
+        color2: { value: new Color().setRGB(0.35, 0.25, 0.15) },
+        color3: { value: new Color().setRGB(1.0,0.95,0.8) },
+        color4: { value: new Color() },
       }
     });
     this.postScene = new Scene();
@@ -165,8 +229,8 @@ class CloudsDemo {
 
     this.controls.update(timestamp);
 
-    this.cloudsUpisfree.update();
-    this.cloudsShadertoy.update();
+    // this.cloudsUpisfree.update();
+    // this.cloudsShadertoy.update();
 
     this.render();
   }

@@ -252,32 +252,38 @@ class CloudsDemo {
     }
 
     this.postCamera = new OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
-    this.postMaterial = new ShaderMaterial({
-      vertexShader: abPostVS,
-      fragmentShader: cloudsShaderPrefix + abPostFS,
-      uniforms: {
-        worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
-        viewportSizeInverse: { value: new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY) },
-        worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
-        tDiffuse: { value: null },
-        tDepth: { value: null },
-        timeSeconds: { value: 0 },
+    if (!this.postMaterial) {
+      this.postMaterial = new ShaderMaterial({
+        vertexShader: abPostVS,
+        fragmentShader: cloudsShaderPrefix + abPostFS,
+        uniforms: {
+          worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
+          viewportSizeInverse: { value: new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY) },
+          worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
+          tDiffuse: { value: null },
+          tDepth: { value: null },
+          timeSeconds: { value: 0 },
 
-        ditherDepth: { value: 1.0 },
-        densityThreshold: { value: 4.0 },
-        cloudsScale: { value: 50.0 },
-        cloudsAltitude: { value: 0.0 },
-        maxRMDistance: { value: 5000.0 },
-        minRMStep: { value: 10.0 },
-        rmStepScale: { value: 1.0 },
-        transparencyThreshold: { value: 0.1 },
+          ditherDepth: { value: 1.0 },
+          densityThreshold: { value: 4.0 },
+          cloudsScale: { value: 50.0 },
+          cloudsAltitude: { value: 0.0 },
+          maxRMDistance: { value: 5000.0 },
+          minRMStep: { value: 10.0 },
+          rmStepScale: { value: 1.0 },
+          transparencyThreshold: { value: 0.1 },
 
-        color1: { value: new Color().setRGB(0.9, 0.9, 0.9) },
-        color2: { value: new Color().setRGB(0.75, 0.75, 0.84) },
-        color3: { value: new Color().setRGB(1.0,0.95,0.8) },
-        color4: { value: new Color() },
-      }
-    });
+          color1: { value: new Color().setRGB(0.9, 0.9, 0.9) },
+          color2: { value: new Color().setRGB(0.75, 0.75, 0.84) },
+          color3: { value: new Color().setRGB(1.0,0.95,0.8) },
+          color4: { value: new Color() },
+        }
+      });
+    } else {
+      this.postMaterial.fragmentShader = cloudsShaderPrefix + abPostFS;
+      this.postMaterial.uniforms.viewportSizeInverse.value = new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY);
+      this.postMaterial.needsUpdate = true;
+    }
     this.postScene = new Scene();
     this.postScene.add(new Mesh(new PlaneGeometry(2,2), this.postMaterial));
   }

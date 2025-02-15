@@ -39,11 +39,14 @@ import CloudsUpisfree from './clouds-upisfree';
 import CloudsShadertoy from './clouds-shadertoy';
 import abPostVS from './ab-post.vertex.glsl?raw';
 import abPostFS from './ab-post.frag.glsl?raw';
+import abMergeFS from './ab-merge.frag.glsl?raw';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 class CloudsDemo {
   constructor(container) {
     this.container = container;
+
+    this.undersampling = 2;
 
     this.init3D();
     this.initPost()
@@ -128,6 +131,7 @@ class CloudsDemo {
 
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
+    window.addEventListener('resize', () => this.initPost());
 
     this.gridHelper = new GridHelper(10000, 150);
     this.scene.add(this.gridHelper);
@@ -194,6 +198,12 @@ class CloudsDemo {
     //   label: "Color 4",
     //   color: { type: 'float' },
     // });
+    cloudsFolder.addBinding(this, "undersampling", {
+      label: "Undersampling",
+      min: 0,
+      max: 4,
+      step: 1,
+    }).on("change", () => this.initPost());
 
     const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });
     helpersFolder.addBinding(this.gridHelper, "visible", { label: "Show grid" });
@@ -205,17 +215,49 @@ class CloudsDemo {
   }
 
   initPost() {
-    console.log(this.renderer.getPixelRatio());
-    this.rt = new WebGLRenderTarget(this.renderer.getPixelRatio() * window.innerWidth, this.renderer.getPixelRatio() * window.innerHeight);
-    this.rt.depthTexture = new DepthTexture(this.rt.width, this.rt.height);
+    const [resolutionX, resolutionY] = [this.renderer.getPixelRatio() * window.innerWidth, this.renderer.getPixelRatio() * window.innerHeight];
+    this.rt = new WebGLRenderTarget(resolutionX, resolutionY);
+    this.rt.depthTexture = new DepthTexture(resolutionX, resolutionY);
+
+    let [cloudsResolutionX, cloudsResolutionY] = [resolutionX, resolutionY];
+
+    let cloudsShaderPrefix = `
+    #define DEPTH_COORD_MULTIPLIER 1
+    #define SAMPLE_COLOR
+    `;
+
+    if (this.undersampling > 0) {
+      this.undersampling = Math.ceil(this.undersampling);
+
+      const scale = 2 ** this.undersampling;
+      [cloudsResolutionX, cloudsResolutionY] = [resolutionX / scale, resolutionY / scale];
+      this.cloudsRt = new WebGLRenderTarget(cloudsResolutionX, cloudsResolutionY);
+
+      cloudsShaderPrefix = `
+      #define DEPTH_COORD_MULTIPLIER ${scale}
+      `;
+
+      this.metaMaterial = new ShaderMaterial({
+        vertexShader: abPostVS,
+        fragmentShader: abMergeFS,
+        uniforms: {
+          sceneTexture: { value: null },
+          cloudsTexture: { value: null },
+          viewportSizeInverse: { value: new Vector2(1/resolutionX, 1/resolutionY) },
+        }
+      });
+
+      this.metaScene = new Scene();
+      this.metaScene.add(new Mesh(new PlaneGeometry(2,2), this.metaMaterial));
+    }
 
     this.postCamera = new OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
     this.postMaterial = new ShaderMaterial({
       vertexShader: abPostVS,
-      fragmentShader: abPostFS,
+      fragmentShader: cloudsShaderPrefix + abPostFS,
       uniforms: {
         worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
-        viewportSizeInverse: { value: new Vector2(1/this.rt.width, 1/this.rt.height) },
+        viewportSizeInverse: { value: new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY) },
         worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
         tDiffuse: { value: null },
         tDepth: { value: null },
@@ -264,13 +306,28 @@ class CloudsDemo {
   render() {
     this.renderer.setRenderTarget(this.rt);
     this.renderer.render(this.scene, this.camera);
-    this.renderer.setRenderTarget(null);
     this.postMaterial.uniforms.tDiffuse.value = this.rt.texture;
     this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
     this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
     this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
     this.postMaterial.uniforms.timeSeconds.value = this.clock.getElapsedTime();
-    this.renderer.render(this.postScene, this.postCamera);
+
+    if (this.undersampling > 0) {
+      this.renderer.setRenderTarget(this.cloudsRt);
+      this.renderer.setClearColor("black", 0.0);
+      this.renderer.clear(true);
+      this.renderer.render(this.postScene, this.postCamera);
+
+      this.renderer.setRenderTarget(null);
+
+      this.metaMaterial.uniforms.sceneTexture.value = this.rt.texture;
+      this.metaMaterial.uniforms.cloudsTexture.value = this.cloudsRt.texture;
+
+      this.renderer.render(this.metaScene, this.postCamera);
+    } else {
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.postScene, this.postCamera);
+    }
   }
 
   resize() {

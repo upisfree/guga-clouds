@@ -1,6 +1,8 @@
 #include <packing>
 
+#ifdef SAMPLE_COLOR
 uniform sampler2D tDiffuse;
+#endif
 uniform sampler2D tDepth;
 uniform vec2 viewportSizeInverse;
 uniform vec3 worldCameraPosition;
@@ -91,11 +93,15 @@ void main() {
     // Integer screenspace coordinates for texelFetch calls
     ivec2 texelCoords = ivec2(gl_FragCoord.xy);
 
+#ifdef SAMPLE_COLOR
     // Pixel of previously rendered scene
     vec3 color = texelFetch(tDiffuse, texelCoords, 0).rgb;
+#else
+    vec3 color = vec3(0.0);
+#endif
 
     // Value from depth buffer
-    float depthTexel = texelFetch(tDepth, texelCoords, 0).r;
+    float depthTexel = texelFetch(tDepth, texelCoords * DEPTH_COORD_MULTIPLIER, 0).r;
     //// Alternative if texelFetch won't work everywhere
     //float depthTexel = texture2D(tDepth, gl_FragCoord.xy * viewportSizeInverse).r;
 
@@ -179,5 +185,9 @@ void main() {
     transparency = max(0.0, (transparency - transparencyThreshold) / (1.0 - transparencyThreshold));
 
     gl_FragColor.rgb = mix(color_acc, color, transparency);
+#ifdef SAMPLE_COLOR
     gl_FragColor.a = 1.0;
+#else
+    gl_FragColor.a = 1.0 - transparency;
+#endif
 }

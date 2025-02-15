@@ -8,18 +8,17 @@ uniform mat4 worldCameraUnprojectionMatrix;
 uniform float timeSeconds;
 
 uniform float densityThreshold;
+uniform float transparencyThreshold;
 uniform float ditherDepth;
 uniform float cloudsScale;
 uniform float maxRMDistance;
+uniform float minRMStep;
+uniform float rmStepScale;
 uniform float cloudsAltitude;
 uniform vec3 color1;
 uniform vec3 color2;
 uniform vec3 color3;
 uniform vec3 color4;
-
-#define DITHERING
-#define IQLIGHT
-#define IQCOLOUR
 
 
 // implementation found at: lumina.sourceforge.net/Tutorials/Noise.html
@@ -79,11 +78,11 @@ float Clouds(vec3 p) {
   p.y -= cloudsAltitude;
   p /= cloudsScale;
   float final = p.y + 4.5;
-    
+
   final -= SpiralNoiseC(p.xyz);  // mid-range noise
   final += SpiralNoiseC(p.zxy * 0.123 + 100.0) * 3.0; // large scale terrain features
   final -= SpiralNoise3D(p); // more large scale features, but 3d, so not just a height map.
-  final -= SpiralNoise3D(p*49.0)*0.0625*0.125; // small scale noise for variation
+  // final -= SpiralNoise3D(p*49.0 + vec3(timeSeconds))*0.0625*0.125; // small scale noise for variation
 
   return final * cloudsScale;
 }
@@ -100,8 +99,12 @@ void main() {
     //// Alternative if texelFetch won't work everywhere
     //float depthTexel = texture2D(tDepth, gl_FragCoord.xy * viewportSizeInverse).r;
 
+    vec2 frag_coord = gl_FragCoord.xy;
+#ifdef DITHERING
+    frag_coord += vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5);
+#endif
     // Screenspace coordinates in range [(-1, -1), (1, 1)]
-    vec2 screen_offset = gl_FragCoord.xy * viewportSizeInverse * 2.0 - 1.0;
+    vec2 screen_offset = frag_coord * viewportSizeInverse * 2.0 - 1.0;
 
     // The point in world space this pixel is looking at
     highp vec4 p = worldCameraUnprojectionMatrix * vec4(screen_offset, depthTexel, 1.0);
@@ -118,7 +121,7 @@ void main() {
     float transparency = 1.0;
 
     // Current step position in world space
-    vec3 pos = worldCameraPosition * 2.0; // I have no fucking idea where this *2 comes from.
+    highp vec3 pos = worldCameraPosition * 2.0; // I have no fucking idea where this *2 comes from.
 
     // Current distance from camera in world units
     float dist = 0.0;
@@ -127,73 +130,54 @@ void main() {
     float max_dist = maxRMDistance;
     max_dist = min(max_dist, l);
 
-#ifdef DITHERING
     dist = 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
     pos += dist * dir;
-#endif
 
-    vec3 sundir = normalize( vec3(-1.0,1.0,0.75) );
+    float prev_transparency = 1.0, prev_dist = 0.0;
+    vec3 color_acc = vec3(1.0);
 
-  
-    // background sky     
-    float sun = clamp(dot(sundir, dir), 0.0, 1.0);
-    
-    vec4 sum = vec4(0.0);
-    float ld = 0.0, td = 0.0;
-
-    while (dist < max_dist) {
+    while (true) {
         float d = Clouds(pos) * 0.326;
-        d = max(d, -0.4);
-
-        if(td>(1.-1./80.) || sum.a > 0.99) break;
 
         if (d < densityThreshold) {
-            // compute local density and weighting factor 
-            float ld = 0.1 - d;
+          vec3 sun_dir = normalize(vec3(1.0));
+          float d_sun = Clouds(pos + sun_dir) * 0.326;
+          float k_sun = clamp(d_sun - d, 0.0, 1.0);
 
-            #ifdef IQLIGHT
-            ld *= clamp((ld - Clouds(pos+0.3*sundir))/0.6, 0.0, 1.0 );
-            const float kmaxdist = 0.6;
-            #else
-            ld *= 0.15;
-            const float kmaxdist = 0.6;
-            #endif
+          // float local_transparency = mix(0.99, 0.95, clamp((d - densityThreshold) * -.2, 0.0, 1.0));
+          float local_transparency = 0.995;
+          vec3 local_color = mix(color1, color2, clamp((d - densityThreshold) * -.1, 0.0, 1.0));
 
-            float w = (1. - td) * ld;
+          // local_color = mix(local_color, color3 * k_sun, 0.5);
 
-            // accumulate density
-            td += w;// + 1./90.;
+          float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
+          color_acc = mix(color_acc, local_color, transparency);
+          // color_acc = local_color;
+          transparency *= step_transparency;
 
-            vec3 lin = color1 + color2*ld;
+          if (transparency < transparencyThreshold) {
+            break;
+          }
 
-            vec4 col = vec4( mix( 1.15*color3, vec3(0.765), d ), max(kmaxdist,d) );
-
-            col.xyz *= lin;
-            col.xyz = mix( col.xyz, color, 1.0-exp(-0.00000004*dist*dist) );
-            // front to back blending    
-            col.a *= 0.4;
-            col.rgb *= col.a;
-            sum = sum + col*(1.0-sum.a);
+          prev_transparency = local_transparency;
+        } else {
+          prev_transparency = 1.0;
         }
 
-#ifdef DITHERING
+        if (dist > max_dist) {
+          break;
+        }
+
+        d *= rmStepScale;
+        // d = min(d, max_dist - dist - 0.1);
+        d = max(d, minRMStep);
         d *= 1.0 + ditherDepth * random(screen_offset * dist);
-#endif
-        // d = min(max_dist - dist - 0.01, d);
-        d = max(0.04, d);
         dist += d;
         pos += dir * d;
     }
 
-    sum = clamp( sum, 0.0, 1.0 );
-    // vec3 col = vec3(0.6,0.71,0.75) - dir.z*0.2*vec3(1.0,0.5,1.0) + 0.15*0.5;
-    vec3 col = color;
-    col = col*(1.0-sum.w) + sum.xyz;
+    transparency = max(0.0, (transparency - transparencyThreshold) / (1.0 - transparencyThreshold));
 
-    // sun glare    
-    col += 0.1*vec3(1.0,0.4,0.2)*pow( sun, 3.0 );
-
-    gl_FragColor.rgb = col.rgb;
-    // gl_FragColor.rgb = mix(cloudColor, color, transparency);
+    gl_FragColor.rgb = mix(color_acc, color, transparency);
     gl_FragColor.a = 1.0;
 }

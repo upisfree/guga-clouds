@@ -39,6 +39,7 @@ import CloudsUpisfree from './clouds-upisfree';
 import CloudsShadertoy from './clouds-shadertoy';
 import abPostVS from './ab-post.vertex.glsl?raw';
 import abPostFS from './ab-post.frag.glsl?raw';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 class CloudsDemo {
   constructor(container) {
@@ -78,6 +79,10 @@ class CloudsDemo {
       // logarithmicDepthBuffer: true
     });
     this.container.appendChild(this.renderer.domElement);
+
+    this.stats = new Stats();
+    this.container.appendChild(this.stats.dom);
+    this.showStats = true;
 
     this.scene = new Scene();
     this.scene.background = new Color(0xb5d9f8);
@@ -126,6 +131,7 @@ class CloudsDemo {
 
     this.gridHelper = new GridHelper(10000, 150);
     this.scene.add(this.gridHelper);
+    this.gridHelper.visible = false;
 
     this.initLights();
   }
@@ -147,10 +153,25 @@ class CloudsDemo {
       min: 500.0,
       max: 10000.0,
     });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.minRMStep, "value", {
+      label: "Min step",
+      min: 0.04,
+      max: 20.0,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.rmStepScale, "value", {
+      label: "Step size",
+      min: 0.2,
+      max: 4.0,
+    });
     cloudsFolder.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
       label: "Density threshold",
       min: 0.0,
-      max: 4.0,
+      max: 10.0,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.transparencyThreshold, "value", {
+      label: "Transparency threshold",
+      min: 0.00001,
+      max: 0.5,
     });
     cloudsFolder.addBinding(this.postMaterial.uniforms.ditherDepth, "value", {
       label: "Dithering depth",
@@ -176,6 +197,7 @@ class CloudsDemo {
 
     const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });
     helpersFolder.addBinding(this.gridHelper, "visible", { label: "Show grid" });
+    helpersFolder.addBinding(this, "showStats", { label: "Show stats"}).on("change", e => e.value ? this.container.appendChild(this.stats.dom) : this.stats.dom.remove());
     helpersFolder.addBinding(this.scene, "background", {
       label: "Background",
       color: { type: 'float' },
@@ -199,14 +221,17 @@ class CloudsDemo {
         tDepth: { value: null },
         timeSeconds: { value: 0 },
 
-        ditherDepth: { value: 0.2 },
-        densityThreshold: { value: 0.6 },
+        ditherDepth: { value: 1.0 },
+        densityThreshold: { value: 4.0 },
         cloudsScale: { value: 50.0 },
         cloudsAltitude: { value: 0.0 },
         maxRMDistance: { value: 5000.0 },
+        minRMStep: { value: 10.0 },
+        rmStepScale: { value: 1.0 },
+        transparencyThreshold: { value: 0.1 },
 
-        color1: { value: new Color().setRGB(0.85, 0.88, 0.9) },
-        color2: { value: new Color().setRGB(0.35, 0.25, 0.15) },
+        color1: { value: new Color().setRGB(0.9, 0.9, 0.9) },
+        color2: { value: new Color().setRGB(0.75, 0.75, 0.84) },
         color3: { value: new Color().setRGB(1.0,0.95,0.8) },
         color4: { value: new Color() },
       }
@@ -233,6 +258,7 @@ class CloudsDemo {
     // this.cloudsShadertoy.update();
 
     this.render();
+    this.stats.update();
   }
 
   render() {

@@ -190,6 +190,11 @@ class CloudsDemo {
       label: "Color 2",
       color: { type: 'float' },
     });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.densityColorGradientLength, "value", {
+      label: "Color gradient depth",
+      min: 0.5,
+      max: 150.0,
+    });
     cloudsFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
       label: "Color 3",
       color: { type: 'float' },
@@ -245,7 +250,7 @@ class CloudsDemo {
       this.undersampling = Math.ceil(this.undersampling);
 
       const scale = 2 ** this.undersampling;
-      [cloudsResolutionX, cloudsResolutionY] = [resolutionX / scale, resolutionY / scale];
+      [cloudsResolutionX, cloudsResolutionY] = [Math.ceil(resolutionX / scale), Math.ceil(resolutionY / scale)];
       this.cloudsRt = new WebGLRenderTarget(cloudsResolutionX, cloudsResolutionY);
 
       cloudsShaderPrefix = `
@@ -283,15 +288,17 @@ class CloudsDemo {
           densityThreshold: { value: 4.0 },
           cloudsScale: { value: 50.0 },
           cloudsAltitude: { value: 0.0 },
-          maxRMDistance: { value: 5000.0 },
+          maxRMDistance: { value: 10000.0 },
           minRMStep: { value: 10.0 },
           rmStepScale: { value: 1.0 },
           transparencyThreshold: { value: 0.1 },
 
-          color1: { value: new Color().setRGB(0.9, 0.9, 0.9) },
-          color2: { value: new Color().setRGB(0.75, 0.75, 0.84) },
+          color1: { value: new Color().setRGB(0.51, 0.51, 0.58) },
+          color2: { value: new Color().setRGB(0.89, 0.89, 0.89) },
           color3: { value: new Color().setRGB(1.0,0.95,0.8) },
           color4: { value: new Color() },
+
+          densityColorGradientLength: { value: 100.0 },
 
           fogColor: { value: new Color().setRGB(0.5, 0.0, 0.0) },
           fogTransparency: { value: 0.99 },

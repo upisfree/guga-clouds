@@ -22,6 +22,8 @@ uniform vec3 color2;
 uniform vec3 color3;
 uniform vec3 color4;
 
+uniform float densityColorGradientLength;
+
 uniform vec3 fogColor;
 uniform float fogTransparency;
 uniform bool fogEnabled;
@@ -156,14 +158,12 @@ void main() {
 
           // float local_transparency = mix(0.99, 0.95, clamp((d - densityThreshold) * -.2, 0.0, 1.0));
           float local_transparency = 0.98;
-          vec3 local_color = mix(color1, color2, clamp((d - densityThreshold) * -.1, 0.0, 1.0));
+          vec3 local_color = mix(color1, color2, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
 
           // local_color = mix(local_color, color3 * k_sun, 0.5);
 
           float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
           color_acc += local_color * (transparency - transparency * step_transparency);
-          // color_acc = mix(local_color, color_acc, transparency);
-          // color_acc = local_color;
           transparency *= step_transparency;
 
           if (transparency < transparencyThreshold) {
@@ -187,7 +187,7 @@ void main() {
         }
 
         d *= rmStepScale;
-        // d = min(d, max_dist - dist - 0.1);
+        d = min(d, max_dist - dist - 0.01);
         d = max(d, minRMStep);
         d *= 1.0 + ditherDepth * random(screen_offset * dist);
         prev_dist = dist;

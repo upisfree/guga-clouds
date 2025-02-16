@@ -198,10 +198,11 @@ void main() {
     color_acc /= max(1.0 - transparency, 0.0001); // max() to prevent division by zero on non-cloudy pixels
     transparency = max(0.0, (transparency - transparencyThreshold) / (1.0 - transparencyThreshold));
 
-    gl_FragColor.rgb = mix(color_acc, color, transparency);
 #ifdef SAMPLE_COLOR
+    gl_FragColor.rgb = mix(color_acc, color, transparency);
     gl_FragColor.a = 1.0;
 #else
+    gl_FragColor.rgb = color_acc;
     gl_FragColor.a = 1.0 - transparency;
 #endif
 }

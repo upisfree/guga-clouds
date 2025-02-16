@@ -5,5 +5,6 @@ uniform vec2 viewportSizeInverse;
 void main() {
     vec4 sceneSample = texelFetch(sceneTexture, ivec2(gl_FragCoord.xy), 0);
     vec4 cloudsSample = texture2D(cloudsTexture, gl_FragCoord.xy * viewportSizeInverse);
-    gl_FragColor = mix(sceneSample, cloudsSample, cloudsSample.a);
+    gl_FragColor.rgb = mix(sceneSample.rgb, cloudsSample.rgb, cloudsSample.a);
+    gl_FragColor.a = 1.0;
 }

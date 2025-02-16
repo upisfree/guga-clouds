@@ -22,6 +22,10 @@ uniform vec3 color2;
 uniform vec3 color3;
 uniform vec3 color4;
 
+uniform vec3 fogColor;
+uniform float fogTransparency;
+uniform bool fogEnabled;
+
 
 // implementation found at: lumina.sourceforge.net/Tutorials/Noise.html
 float random(vec2 co) {
@@ -123,7 +127,7 @@ void main() {
     highp float l = length(dir);
     dir /= l;
 
-    // Cloud transparecy/opacity accumulator
+    // Cloud transparency/opacity accumulator
     float transparency = 1.0;
 
     // Current step position in world space
@@ -139,8 +143,8 @@ void main() {
     dist = 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
     pos += dist * dir;
 
-    float prev_transparency = 1.0, prev_dist = 0.0;
-    vec3 color_acc = vec3(1.0);
+    float prev_transparency = 1.0, prev_dist = dist;
+    vec3 color_acc = vec3(0.0);
 
     while (true) {
         float d = Clouds(pos) * 0.326;
@@ -151,13 +155,14 @@ void main() {
           float k_sun = clamp(d_sun - d, 0.0, 1.0);
 
           // float local_transparency = mix(0.99, 0.95, clamp((d - densityThreshold) * -.2, 0.0, 1.0));
-          float local_transparency = 0.995;
+          float local_transparency = 0.98;
           vec3 local_color = mix(color1, color2, clamp((d - densityThreshold) * -.1, 0.0, 1.0));
 
           // local_color = mix(local_color, color3 * k_sun, 0.5);
 
           float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
-          color_acc = mix(color_acc, local_color, transparency);
+          color_acc += local_color * (transparency - transparency * step_transparency);
+          // color_acc = mix(local_color, color_acc, transparency);
           // color_acc = local_color;
           transparency *= step_transparency;
 
@@ -170,6 +175,13 @@ void main() {
           prev_transparency = 1.0;
         }
 
+        if (fogEnabled) {
+          float fog_dst = min(dist, max_dist) - prev_dist;
+          float fog_step_transparency = pow(fogTransparency, fog_dst / 10.0);
+          color_acc += fogColor * (transparency * (1.0 - fog_step_transparency));
+          transparency *= fog_step_transparency;
+        }
+
         if (dist > max_dist) {
           break;
         }
@@ -178,10 +190,12 @@ void main() {
         // d = min(d, max_dist - dist - 0.1);
         d = max(d, minRMStep);
         d *= 1.0 + ditherDepth * random(screen_offset * dist);
+        prev_dist = dist;
         dist += d;
         pos += dir * d;
     }
 
+    color_acc /= max(1.0 - transparency, 0.0001); // max() to prevent division by zero on non-cloudy pixels
     transparency = max(0.0, (transparency - transparencyThreshold) / (1.0 - transparencyThreshold));
 
     gl_FragColor.rgb = mix(color_acc, color, transparency);

@@ -205,6 +205,21 @@ class CloudsDemo {
       step: 1,
     }).on("change", () => this.initPost());
 
+    const fogFolder = this.pane.addFolder({ title: "Fog", expanded: true });
+
+    fogFolder.addBinding(this.postMaterial.uniforms.fogEnabled, "value", {
+      label: "Enabled",
+    });
+    fogFolder.addBinding(this.postMaterial.uniforms.fogColor, "value", {
+      label: "Color",
+      color: { type: "float" },
+    });
+    fogFolder.addBinding(this.postMaterial.uniforms.fogTransparency, "value", {
+      label: "Transparency",
+      min: 0.99,
+      max: 0.9999,
+    });
+
     const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });
     helpersFolder.addBinding(this.gridHelper, "visible", { label: "Show grid" });
     helpersFolder.addBinding(this, "showStats", { label: "Show stats"}).on("change", e => e.value ? this.container.appendChild(this.stats.dom) : this.stats.dom.remove());
@@ -277,6 +292,10 @@ class CloudsDemo {
           color2: { value: new Color().setRGB(0.75, 0.75, 0.84) },
           color3: { value: new Color().setRGB(1.0,0.95,0.8) },
           color4: { value: new Color() },
+
+          fogColor: { value: new Color().setRGB(0.5, 0.0, 0.0) },
+          fogTransparency: { value: 0.99 },
+          fogEnabled: { value: false },
         }
       });
     } else {

@@ -22,7 +22,11 @@ uniform vec3 color2;
 uniform vec3 color3;
 uniform vec3 color4;
 
+uniform float alpha1;
+uniform float alpha2;
+
 uniform float densityColorGradientLength;
+uniform float densityAlphaGradientLength;
 
 uniform vec3 fogColor;
 uniform float fogTransparency;
@@ -119,7 +123,7 @@ void main() {
     vec2 screen_offset = frag_coord * viewportSizeInverse * 2.0 - 1.0;
 
     // The point in world space this pixel is looking at
-    highp vec4 p = worldCameraUnprojectionMatrix * vec4(screen_offset, depthTexel, 1.0);
+    highp vec4 p = worldCameraUnprojectionMatrix * vec4(screen_offset, depthTexel * 2.0 - 1.0, 1.0);
     p = vec4(p.xyz / p.w, 1.0);
 
     // Direction from camera thru this pixel
@@ -133,7 +137,7 @@ void main() {
     float transparency = 1.0;
 
     // Current step position in world space
-    highp vec3 pos = worldCameraPosition * 2.0; // I have no fucking idea where this *2 comes from.
+    highp vec3 pos = worldCameraPosition;
 
     // Current distance from camera in world units
     float dist = 0.0;
@@ -156,8 +160,7 @@ void main() {
           float d_sun = Clouds(pos + sun_dir) * 0.326;
           float k_sun = clamp(d_sun - d, 0.0, 1.0);
 
-          // float local_transparency = mix(0.99, 0.95, clamp((d - densityThreshold) * -.2, 0.0, 1.0));
-          float local_transparency = 0.98;
+          float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));
           vec3 local_color = mix(color1, color2, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
 
           // local_color = mix(local_color, color3 * k_sun, 0.5);

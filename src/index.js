@@ -195,6 +195,21 @@ class CloudsDemo {
       min: 0.5,
       max: 150.0,
     });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.alpha1, "value", {
+      label: "Alpha 1",
+      min: 0.9,
+      max: 0.999,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.alpha2, "value", {
+      label: "Alpha 2",
+      min: 0.9,
+      max: 0.999,
+    });
+    cloudsFolder.addBinding(this.postMaterial.uniforms.densityAlphaGradientLength, "value", {
+      label: "Alpha gradient depth",
+      min: 0.5,
+      max: 150.0,
+    });
     cloudsFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
       label: "Color 3",
       color: { type: 'float' },
@@ -298,7 +313,11 @@ class CloudsDemo {
           color3: { value: new Color().setRGB(1.0,0.95,0.8) },
           color4: { value: new Color() },
 
+          alpha1: { value: 0.99 },
+          alpha2: { value: 0.95 },
+
           densityColorGradientLength: { value: 100.0 },
+          densityAlphaGradientLength: { value: 100.0 },
 
           fogColor: { value: new Color().setRGB(0.5, 0.0, 0.0) },
           fogTransparency: { value: 0.99 },
@@ -441,6 +460,10 @@ class CloudsDemo {
 
     object = new Mesh(new TorusKnotGeometry(50, 10, 50, 20), material);
     object.position.set(300, 0, -200);
+    this.scene.add(object);
+
+    object = new Mesh(new TorusKnotGeometry(50, 10, 50, 20), material);
+    object.position.set(0, 0, 10000);
     this.scene.add(object);
   }
 }

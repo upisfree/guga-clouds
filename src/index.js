@@ -31,7 +31,10 @@ import {
   TorusGeometry,
   TorusKnotGeometry,
   Vector2,
-  WebGLRenderer
+  WebGLRenderer,
+  TextureLoader,
+  LinearFilter,
+  RepeatWrapping
 } from 'three';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
@@ -40,13 +43,23 @@ import CloudsShadertoy from './clouds-shadertoy';
 import abPostVS from './ab-post.vertex.glsl?raw';
 import abPostFS from './ab-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
+import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+
+const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
+  tx.magFilter = LinearFilter;
+  tx.minFilter = LinearFilter;
+  tx.wrapS = RepeatWrapping;
+  tx.wrapT = RepeatWrapping;
+});
 
 class CloudsDemo {
   constructor(container) {
     this.container = container;
 
     this.undersampling = 2;
+    this.detailsWindSpeed = 800.0;
+    this.detailsWindChangeSpeed = 0.05;
 
     this.init3D();
     this.initPost()
@@ -142,90 +155,119 @@ class CloudsDemo {
 
   initPane() {
     const cloudsFolder = this.pane.addFolder({title: "Clouds"});
-    cloudsFolder.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
+
+    const cloudsShapeFolder = cloudsFolder.addFolder({title: "Shape", expanded: false});
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
       label: "Scale",
       min: 1.0,
       max: 500.0,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.cloudsAltitude, "value", {
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsAltitude, "value", {
       label: "Altitude",
       min: -500,
       max: 500,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.maxRMDistance, "value", {
-      label: "Max distance",
-      min: 500.0,
-      max: 10000.0,
-    });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.minRMStep, "value", {
-      label: "Min step",
-      min: 0.04,
-      max: 20.0,
-    });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.rmStepScale, "value", {
-      label: "Step size",
-      min: 0.2,
-      max: 4.0,
-    });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
-      label: "Density threshold",
+
+    const cloudsColorFolder = cloudsFolder.addFolder({ title: "Coloring" });
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
+      label: "Density thres.",
       min: 0.0,
       max: 10.0,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.transparencyThreshold, "value", {
-      label: "Transparency threshold",
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.transparencyThreshold, "value", {
+      label: "α thres.",
       min: 0.00001,
       max: 0.5,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.ditherDepth, "value", {
-      label: "Dithering depth",
-      min: 0.0,
-      max: 1.0,
-    });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.color1, "value", {
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.color1, "value", {
       label: "Color 1",
       color: { type: 'float' },
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.color2, "value", {
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.color2, "value", {
       label: "Color 2",
       color: { type: 'float' },
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.densityColorGradientLength, "value", {
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityColorGradientLength, "value", {
       label: "Color gradient depth",
       min: 0.5,
       max: 150.0,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.alpha1, "value", {
-      label: "Alpha 1",
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.alpha1, "value", {
+      label: "α 1",
       min: 0.9,
       max: 0.999,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.alpha2, "value", {
-      label: "Alpha 2",
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.alpha2, "value", {
+      label: "α 2",
       min: 0.9,
       max: 0.999,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.densityAlphaGradientLength, "value", {
-      label: "Alpha gradient depth",
+    cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityAlphaGradientLength, "value", {
+      label: "α gradient depth",
       min: 0.5,
       max: 150.0,
     });
-    cloudsFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
-      label: "Color 3",
-      color: { type: 'float' },
-    });
-    // cloudsFolder.addBinding(this.postMaterial.uniforms.color4, "value", {
+    // cloudsColorFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
+    //   label: "Color 3",
+    //   color: { type: 'float' },
+    // });
+    // cloudsColorFolder.addBinding(this.postMaterial.uniforms.color4, "value", {
     //   label: "Color 4",
     //   color: { type: 'float' },
     // });
-    cloudsFolder.addBinding(this, "undersampling", {
+
+    const cloudsQualityFolder = cloudsFolder.addFolder({ title: "Quality" });
+    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.maxRMDistance, "value", {
+      label: "Max distance",
+      min: 500.0,
+      max: 10000.0,
+    });
+    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.minRMStep, "value", {
+      label: "Min step",
+      min: 0.04,
+      max: 20.0,
+    });
+    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.rmStepScale, "value", {
+      label: "Step size",
+      min: 0.2,
+      max: 4.0,
+    });
+    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.ditherDepth, "value", {
+      label: "Dithering depth",
+      min: 0.0,
+      max: 1.0,
+    });
+    cloudsQualityFolder.addBinding(this, "undersampling", {
       label: "Undersampling",
       min: 0,
       max: 4,
       step: 1,
     }).on("change", () => this.initPost());
 
-    const fogFolder = this.pane.addFolder({ title: "Fog", expanded: true });
+
+    const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
+    cloudsDetailsFolder.addBinding(this.postMaterial.uniforms.detailsScale, "value", {
+      label: "Scale",
+      min: 10.0,
+      max: 70.0,
+    });
+    cloudsDetailsFolder.addBinding(this.postMaterial.uniforms.detailsIntensity, "value", {
+      label: "Intensity",
+      min: 1.0,
+      max: 10.0,
+    });
+    cloudsDetailsFolder.addBinding(this, "detailsWindSpeed", {
+      label: "Wind speed",
+      min: 100,
+      max: 5000,
+    });
+    cloudsDetailsFolder.addBinding(this, "detailsWindChangeSpeed", {
+      label: "Wind change speed",
+      min: 0.05,
+      max: 1.0,
+    });
+
+    const fogFolder = this.pane.addFolder({ title: "Fog", expanded: false });
 
     fogFolder.addBinding(this.postMaterial.uniforms.fogEnabled, "value", {
       label: "Enabled",
@@ -299,6 +341,8 @@ class CloudsDemo {
           tDepth: { value: null },
           timeSeconds: { value: 0 },
 
+          noiseTexture: { value: noiseTexture },
+
           ditherDepth: { value: 1.0 },
           densityThreshold: { value: 4.0 },
           cloudsScale: { value: 50.0 },
@@ -307,6 +351,10 @@ class CloudsDemo {
           minRMStep: { value: 10.0 },
           rmStepScale: { value: 1.0 },
           transparencyThreshold: { value: 0.1 },
+
+          detailsScale: { value: 30.0 },
+          detailsIntensity: { value: 1.0 },
+          detailsOffset: { value: new Vector3(0, 0, 0) },
 
           color1: { value: new Color().setRGB(0.51, 0.51, 0.58) },
           color2: { value: new Color().setRGB(0.89, 0.89, 0.89) },
@@ -362,6 +410,11 @@ class CloudsDemo {
     this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
     this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
     this.postMaterial.uniforms.timeSeconds.value = this.clock.getElapsedTime();
+    this.postMaterial.uniforms.detailsOffset.value = new Vector3(
+      Math.cos(this.clock.getElapsedTime() * this.detailsWindChangeSpeed),
+      Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
+      Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed)
+    ).multiplyScalar(this.detailsWindSpeed);
 
     if (this.undersampling > 0) {
       this.renderer.setRenderTarget(this.cloudsRt);

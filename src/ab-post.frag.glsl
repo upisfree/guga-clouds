@@ -28,10 +28,31 @@ uniform float alpha2;
 uniform float densityColorGradientLength;
 uniform float densityAlphaGradientLength;
 
+uniform float detailsScale;
+uniform float detailsIntensity;
+uniform vec3 detailsOffset;
+
 uniform vec3 fogColor;
 uniform float fogTransparency;
 uniform bool fogEnabled;
 
+uniform sampler2D noiseTexture;
+
+// iq's noise
+float pn(vec3 x)
+{
+  vec3 p = floor(x);
+  vec3 f = fract(x);
+	f = f*f*(3.0-2.0*f);
+	vec2 uv = (p.xy+vec2(37.0,17.0)*p.z) + f.xy;
+	vec2 rg = textureLod( noiseTexture, (uv+ 0.5)/256.0, 0.0 ).yx;
+	return -1.0+2.4*mix( rg.x, rg.y, f.z );
+}
+
+float fpn(vec3 p) 
+{
+   return pn(p*.06125)*.5 + pn(p*.125)*.25 + pn(p*.25)*.125;
+}
 
 // implementation found at: lumina.sourceforge.net/Tutorials/Noise.html
 float random(vec2 co) {
@@ -95,6 +116,8 @@ float Clouds(vec3 p) {
   final += SpiralNoiseC(p.zxy * 0.123 + 100.0) * 3.0; // large scale terrain features
   final -= SpiralNoise3D(p); // more large scale features, but 3d, so not just a height map.
   // final -= SpiralNoise3D(p*49.0 + vec3(timeSeconds))*0.0625*0.125; // small scale noise for variation
+
+  final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
 
   return final * cloudsScale;
 }

@@ -38,6 +38,9 @@ uniform bool fogEnabled;
 
 uniform sampler2D noiseTexture;
 
+uniform float cameraNear;
+uniform float cameraFar;
+
 // iq's noise
 float pn(vec3 x)
 {
@@ -122,6 +125,13 @@ float Clouds(vec3 p) {
   return final * cloudsScale;
 }
 
+float linearize_depth(float depth){
+  depth = pow(2.0, depth * log2(cameraFar + 1.0)) - 1.0;
+  float a = cameraFar / (cameraFar - cameraNear);
+  float b = cameraFar * cameraNear / (cameraNear - cameraFar);
+  return a + b / depth;
+}
+
 void main() {
     // Integer screenspace coordinates for texelFetch calls
     ivec2 texelCoords = ivec2(gl_FragCoord.xy);
@@ -138,15 +148,19 @@ void main() {
     //// Alternative if texelFetch won't work everywhere
     //float depthTexel = texture2D(tDepth, gl_FragCoord.xy * viewportSizeInverse).r;
 
+#ifdef USE_LOGDEPTHBUF
+  depthTexel = linearize_depth(depthTexel);
+#endif
+
     vec2 frag_coord = gl_FragCoord.xy;
 #ifdef DITHERING
     frag_coord += vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5);
 #endif
     // Screenspace coordinates in range [(-1, -1), (1, 1)]
-    vec2 screen_offset = frag_coord * viewportSizeInverse * 2.0 - 1.0;
+    vec2 screen_offset = frag_coord * viewportSizeInverse;
 
     // The point in world space this pixel is looking at
-    highp vec4 p = worldCameraUnprojectionMatrix * vec4(screen_offset, depthTexel * 2.0 - 1.0, 1.0);
+    highp vec4 p = worldCameraUnprojectionMatrix * (vec4(screen_offset, depthTexel, 1.0) * 2.0 - 1.0);
     p = vec4(p.xyz / p.w, 1.0);
 
     // Direction from camera thru this pixel

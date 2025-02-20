@@ -45,6 +45,7 @@ import abPostFS from './ab-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { cameraFar, cameraNear } from 'three/tsl';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -91,8 +92,7 @@ class CloudsDemo {
       powerPreference: 'high-performance',
       antialias: true,
       alpha: false,
-      // TODO: Адаптировать шейдер для логарифмического буфера глубины или отказаться от логарифмического буфера глубины (?)
-      // logarithmicDepthBuffer: true
+      logarithmicDepthBuffer: true,
     });
     this.container.appendChild(this.renderer.domElement);
 
@@ -334,6 +334,8 @@ class CloudsDemo {
         vertexShader: abPostVS,
         fragmentShader: cloudsShaderPrefix + abPostFS,
         uniforms: {
+          cameraFar: { value: this.camera.far },
+          cameraNear: { value: this.camera.near },
           worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
           viewportSizeInverse: { value: new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY) },
           worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },

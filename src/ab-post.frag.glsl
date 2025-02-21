@@ -1,6 +1,10 @@
-#include <packing>
+// Clouds shader.
+// Based on https://www.shadertoy.com/view/ll2SWd
 
-#ifdef SAMPLE_COLOR
+// If MERGE_COLOR is defined, this shader will read a color value from pre-rendered frame texture and merge it with
+// clouds image, resulting in an opaque image.
+// Otherwise, the shader will render clouds only, saving accumulated clouds transparency in alpha channel of resulting image.
+#ifdef MERGE_COLOR
 uniform sampler2D tDiffuse;
 #endif
 uniform sampler2D tDepth;
@@ -17,6 +21,7 @@ uniform float maxRMDistance;
 uniform float minRMStep;
 uniform float rmStepScale;
 uniform float cloudsAltitude;
+uniform float cloudsTransitionalLayerScale;
 uniform vec3 color1;
 uniform vec3 color2;
 uniform vec3 color3;
@@ -110,21 +115,31 @@ float SpiralNoise3D(vec3 p) {
   return n;
 }
 
-float Clouds(vec3 p) {
+// Returns a value correlating with distance towards a surface of a cloud from fiven point in world space.
+// Negative value is returned for points inside the cloud, positive for points outside.
+// This is similar to Signed Distance Field (SDF), but the value does not (or does it?) represent exact distance to the surface.
+float get_cloud_distance(vec3 p) {
+  // Offset clouds field along vertical axis, scale along all axes
   p.y -= cloudsAltitude;
   p /= cloudsScale;
-  float final = p.y + 4.5;
+
+  // Change clouds density depending on altitude
+  float final = p.y * cloudsTransitionalLayerScale;
 
   final -= SpiralNoiseC(p.xyz);  // mid-range noise
   final += SpiralNoiseC(p.zxy * 0.123 + 100.0) * 3.0; // large scale terrain features
   final -= SpiralNoise3D(p); // more large scale features, but 3d, so not just a height map.
   // final -= SpiralNoise3D(p*49.0 + vec3(timeSeconds))*0.0625*0.125; // small scale noise for variation
 
+  // Add texture-based noise
   final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
 
-  return final * cloudsScale;
+  // scale result back, so it's closer to distance to cloud surface, 0.326 - magic number from the original shader.
+  return final * cloudsScale * 0.326;
 }
 
+// Conversion from logarithmic depth to linear depth.
+// Based on answer to this question on SO: https://stackoverflow.com/questions/40373184/world-space-position-from-logarithmic-depth-buffer
 float linearize_depth(float depth){
   depth = pow(2.0, depth * log2(cameraFar + 1.0)) - 1.0;
   float a = cameraFar / (cameraFar - cameraNear);
@@ -136,7 +151,7 @@ void main() {
     // Integer screenspace coordinates for texelFetch calls
     ivec2 texelCoords = ivec2(gl_FragCoord.xy);
 
-#ifdef SAMPLE_COLOR
+#ifdef MERGE_COLOR
     // Pixel of previously rendered scene
     vec3 color = texelFetch(tDiffuse, texelCoords, 0).rgb;
 #else
@@ -190,11 +205,11 @@ void main() {
     vec3 color_acc = vec3(0.0);
 
     while (true) {
-        float d = Clouds(pos) * 0.326;
+        float d = get_cloud_distance(pos);
 
         if (d < densityThreshold) {
           vec3 sun_dir = normalize(vec3(1.0));
-          float d_sun = Clouds(pos + sun_dir) * 0.326;
+          float d_sun = get_cloud_distance(pos + sun_dir);
           float k_sun = clamp(d_sun - d, 0.0, 1.0);
 
           float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));
@@ -238,7 +253,7 @@ void main() {
     color_acc /= max(1.0 - transparency, 0.0001); // max() to prevent division by zero on non-cloudy pixels
     transparency = max(0.0, (transparency - transparencyThreshold) / (1.0 - transparencyThreshold));
 
-#ifdef SAMPLE_COLOR
+#ifdef MERGE_COLOR
     gl_FragColor.rgb = mix(color_acc, color, transparency);
     gl_FragColor.a = 1.0;
 #else

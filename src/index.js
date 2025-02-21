@@ -109,7 +109,7 @@ class CloudsDemo {
 
     this.clock = new Clock();
 
-    this.camera = new PerspectiveCamera(60, 1, 0.1, 10000);
+    this.camera = new PerspectiveCamera(60, 1, 0.1, 100000);
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
     this.controls.settings.general.mode = ControlMode.FIRST_PERSON;
@@ -167,6 +167,11 @@ class CloudsDemo {
       min: -500,
       max: 500,
     });
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsTransitionalLayerScale, "value", {
+      label: "Tr. layer",
+      min: 0.1,
+      max: 1.8,
+    });
 
     const cloudsColorFolder = cloudsFolder.addFolder({ title: "Coloring" });
     cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
@@ -219,8 +224,8 @@ class CloudsDemo {
     const cloudsQualityFolder = cloudsFolder.addFolder({ title: "Quality" });
     cloudsQualityFolder.addBinding(this.postMaterial.uniforms.maxRMDistance, "value", {
       label: "Max distance",
-      min: 500.0,
-      max: 10000.0,
+      min: 10000.0,
+      max: this.camera.far,
     });
     cloudsQualityFolder.addBinding(this.postMaterial.uniforms.minRMStep, "value", {
       label: "Min step",
@@ -300,7 +305,7 @@ class CloudsDemo {
 
     let cloudsShaderPrefix = `
     #define DEPTH_COORD_MULTIPLIER 1
-    #define SAMPLE_COLOR
+    #define MERGE_COLOR
     `;
 
     if (this.undersampling > 0) {
@@ -348,7 +353,8 @@ class CloudsDemo {
           ditherDepth: { value: 1.0 },
           densityThreshold: { value: 4.0 },
           cloudsScale: { value: 50.0 },
-          cloudsAltitude: { value: 0.0 },
+          cloudsAltitude: { value: -100.0 },
+          cloudsTransitionalLayerScale: { value: 1.0 },
           maxRMDistance: { value: 10000.0 },
           minRMStep: { value: 10.0 },
           rmStepScale: { value: 1.0 },

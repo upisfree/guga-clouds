@@ -101,7 +101,8 @@ class CloudsDemo {
     this.showStats = true;
 
     this.scene = new Scene();
-    this.scene.background = new Color(0xb5d9f8);
+    // фон не такой, как в Гуге, но такой, как в шейдере. пока оставлю таким, чтобы было легче сравнивать цвета с оригинальным шейдером
+    this.scene.background = new Color(0xa6c4c0);
     // this.scene.fog = new Fog(0xb5d9f8, 150, 310);
 
     this.renderer.toneMapping = NeutralToneMapping;
@@ -358,14 +359,14 @@ class CloudsDemo {
           maxRMDistance: { value: 10000.0 },
           minRMStep: { value: 10.0 },
           rmStepScale: { value: 1.0 },
-          transparencyThreshold: { value: 0.1 },
+          transparencyThreshold: { value: 0.3 },
 
           detailsScale: { value: 30.0 },
           detailsIntensity: { value: 1.0 },
           detailsOffset: { value: new Vector3(0, 0, 0) },
 
-          color1: { value: new Color().setRGB(0.51, 0.51, 0.58) },
-          color2: { value: new Color().setRGB(0.89, 0.89, 0.89) },
+          color1: { value: new Color().setRGB(0.874509804, 0.874509804, 0.796078431) }, // #dfdfcb
+          color2: { value: new Color().setRGB(1, 1, 0.870588235) }, // #ffffde
           color3: { value: new Color().setRGB(1.0,0.95,0.8) },
           color4: { value: new Color() },
 

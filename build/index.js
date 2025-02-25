@@ -27606,7 +27606,7 @@ const Rw = new Wh().load(Tw, (i) => {
 });
 class Pw {
   constructor(e) {
-    this.container = e, this.undersampling = 2, this.detailsWindSpeed = 800, this.detailsWindChangeSpeed = 0.05, this.init3D(), this.initPost(), this.initLevel(), this.pane = new Sw(), this.initPane(), this.clock = new mc(!0), this.update();
+    this.container = e, this.undersampling = 2, this.detailsWindSpeed = 200, this.detailsWindChangeSpeed = 0.05, this.init3D(), this.initPost(), this.initLevel(), this.pane = new Sw(), this.initPane(), this.clock = new mc(!0), this.update();
   }
   init3D() {
     this.renderer = new Kb({
@@ -27633,15 +27633,16 @@ class Pw {
     t.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
       label: "Scale",
       min: 1,
-      max: 500
+      max: 200
+      // step: 0.5,
     }), t.addBinding(this.postMaterial.uniforms.cloudsAltitude, "value", {
       label: "Altitude",
-      min: -500,
-      max: 500
+      min: -1e3,
+      max: 1e3
     }), t.addBinding(this.postMaterial.uniforms.cloudsTransitionalLayerScale, "value", {
       label: "Tr. layer",
       min: 0.1,
-      max: 1.8
+      max: 2.5
     });
     const n = e.addFolder({ title: "Coloring" });
     n.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
@@ -27770,15 +27771,15 @@ class Pw {
         noiseTexture: { value: Rw },
         ditherDepth: { value: 1 },
         densityThreshold: { value: 4 },
-        cloudsScale: { value: 50 },
-        cloudsAltitude: { value: -100 },
-        cloudsTransitionalLayerScale: { value: 1 },
+        cloudsScale: { value: 120 },
+        cloudsAltitude: { value: -370 },
+        cloudsTransitionalLayerScale: { value: 1.95 },
         maxRMDistance: { value: 1e4 },
         minRMStep: { value: 10 },
         rmStepScale: { value: 1 },
         transparencyThreshold: { value: 0.3 },
-        detailsScale: { value: 30 },
-        detailsIntensity: { value: 1 },
+        detailsScale: { value: 36 },
+        detailsIntensity: { value: 1.39 },
         detailsOffset: { value: new T(0, 0, 0) },
         color1: { value: new we().setRGB(0.874509804, 0.874509804, 0.796078431) },
         // #dfdfcb

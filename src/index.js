@@ -105,8 +105,7 @@ class CloudsDemo {
     this.showStats = true;
 
     this.scene = new Scene();
-    // фон не такой, как в Гуге, но такой, как в шейдере. пока оставлю таким, чтобы было легче сравнивать цвета с оригинальным шейдером
-    this.scene.background = new Color(0xa6c4c0);
+    this.scene.background = new Color(0xa4cbf4);
     // this.scene.fog = new Fog(0xb5d9f8, 150, 310);
 
     this.renderer.toneMapping = NeutralToneMapping;

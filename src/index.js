@@ -34,8 +34,11 @@ import {
   WebGLRenderer,
   TextureLoader,
   LinearFilter,
-  RepeatWrapping
+  RepeatWrapping, NearestFilter, MeshBasicMaterial
 } from 'three';
+import { GLTFLoader } from 'three/addons';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
 import CloudsUpisfree from './clouds-upisfree';
@@ -64,7 +67,8 @@ class CloudsDemo {
 
     this.init3D();
     this.initPost()
-    this.initObjects();
+    // this.initObjects();
+    this.initLevel();
 
     this.pane = new Pane();
     this.initPane();
@@ -394,9 +398,47 @@ class CloudsDemo {
     this.ambientLight = new AmbientLight(0xffffff, 2);
     this.scene.add(this.ambientLight);
 
-    this.directionalLight = new DirectionalLight(0xffffff, 1);
-    this.directionalLight.position.set(10, 0, 0);
-    this.scene.add(this.directionalLight);
+    // this.directionalLight = new DirectionalLight(0xffffff, 1);
+    // this.directionalLight.position.set(10, 0, 0);
+    // this.scene.add(this.directionalLight);
+  }
+
+  async initLevel() {
+    const gltfLoader = new GLTFLoader();
+
+    const ktx2Loader = new KTX2Loader();
+    ktx2Loader.setTranscoderPath('./lib/basis/');
+    ktx2Loader.detectSupport(this.renderer);
+
+    gltfLoader.setKTX2Loader(ktx2Loader);
+    gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
+    const model = await gltfLoader.loadAsync('./assets/level.glb');
+    const level = model.scene;
+
+    level.getObjectByName('PHYSICS_GEOMETRY').visible = false;
+    level.getObjectByName('PLAYER_SPAWN_POINT').visible = false;
+
+    level.traverse(obj => {
+      if (obj.isMesh && obj.material) {
+        if (obj.material.map) {
+          obj.material.map.magFilter = NearestFilter;
+          obj.material.map.minFilter = NearestFilter;
+          obj.material.map.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        }
+
+
+        this.convertMaterialStandardToBasic(obj);
+      }
+    });
+
+    this.scene.add(level);
+  }
+
+  convertMaterialStandardToBasic(mesh) {
+    let prevMaterial = mesh.material;
+    mesh.material = new MeshBasicMaterial();
+    MeshBasicMaterial.prototype.copy.call(mesh.material, prevMaterial);
   }
 
   update(timestamp) {

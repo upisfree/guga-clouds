@@ -62,7 +62,7 @@ class CloudsDemo {
     this.container = container;
 
     this.undersampling = 2;
-    this.detailsWindSpeed = 800.0;
+    this.detailsWindSpeed = 200.0;
     this.detailsWindChangeSpeed = 0.05;
 
     this.init3D();
@@ -164,17 +164,18 @@ class CloudsDemo {
     cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
       label: "Scale",
       min: 1.0,
-      max: 500.0,
+      max: 200.0,
+      // step: 0.5,
     });
     cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsAltitude, "value", {
       label: "Altitude",
-      min: -500,
-      max: 500,
+      min: -1000,
+      max: 1000,
     });
     cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsTransitionalLayerScale, "value", {
       label: "Tr. layer",
       min: 0.1,
-      max: 1.8,
+      max: 2.5,
     });
 
     const cloudsColorFolder = cloudsFolder.addFolder({ title: "Coloring" });
@@ -356,16 +357,16 @@ class CloudsDemo {
 
           ditherDepth: { value: 1.0 },
           densityThreshold: { value: 4.0 },
-          cloudsScale: { value: 50.0 },
-          cloudsAltitude: { value: -100.0 },
-          cloudsTransitionalLayerScale: { value: 1.0 },
+          cloudsScale: { value: 120.0 },
+          cloudsAltitude: { value: -370.0 },
+          cloudsTransitionalLayerScale: { value: 1.95 },
           maxRMDistance: { value: 10000.0 },
           minRMStep: { value: 10.0 },
           rmStepScale: { value: 1.0 },
           transparencyThreshold: { value: 0.3 },
 
-          detailsScale: { value: 30.0 },
-          detailsIntensity: { value: 1.0 },
+          detailsScale: { value: 36.0 },
+          detailsIntensity: { value: 1.39 },
           detailsOffset: { value: new Vector3(0, 0, 0) },
 
           color1: { value: new Color().setRGB(0.874509804, 0.874509804, 0.796078431) }, // #dfdfcb

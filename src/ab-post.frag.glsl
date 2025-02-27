@@ -46,6 +46,9 @@ uniform sampler2D noiseTexture;
 uniform float cameraNear;
 uniform float cameraFar;
 
+uniform vec3 sunDirection;
+uniform float sunCastDistance;
+
 // iq's noise
 float pn(vec3 x)
 {
@@ -208,14 +211,11 @@ void main() {
         float d = get_cloud_distance(pos);
 
         if (d < densityThreshold) {
-          vec3 sun_dir = normalize(vec3(1.0));
-          float d_sun = get_cloud_distance(pos + sun_dir);
-          float k_sun = clamp(d_sun - d, 0.0, 1.0);
+          float d_sun = get_cloud_distance(pos + sunDirection * sunCastDistance * (1.0 + ditherDepth * random(d * screen_offset.yx + fract(timeSeconds))));
+          float k_sun = clamp((d_sun - d), 0.0, 1.0);
 
           float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));
-          vec3 local_color = mix(color1, color2, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
-
-          // local_color = mix(local_color, color3 * k_sun, 0.5);
+          vec3 local_color = mix(color1, color2 + color3 * k_sun, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
 
           float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
           color_acc += local_color * (transparency - transparency * step_transparency);

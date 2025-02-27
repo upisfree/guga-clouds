@@ -216,14 +216,27 @@ class CloudsDemo {
       min: 0.5,
       max: 150.0,
     });
-    // cloudsColorFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
-    //   label: "Color 3",
-    //   color: { type: 'float' },
-    // });
     // cloudsColorFolder.addBinding(this.postMaterial.uniforms.color4, "value", {
     //   label: "Color 4",
     //   color: { type: 'float' },
     // });
+
+    const cloudsSunFolder = cloudsColorFolder.addFolder({ title: "Sun" });
+    cloudsSunFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
+      label: "Color 3",
+      color: { type: 'float' },
+    });
+    cloudsSunFolder.addBinding(this.postMaterial.uniforms.sunDirection, "value", {
+      label: "Sun direction",
+    }).on("change", () => {
+      this.postMaterial.uniforms.sunDirection.value.normalize();
+      setTimeout(() => cloudsColorFolder.refresh(), 0);
+    });
+    cloudsSunFolder.addBinding(this.postMaterial.uniforms.sunCastDistance, "value", {
+      label: "Sun cast distance",
+      min: 10,
+      max: 100,
+    });
 
     const cloudsQualityFolder = cloudsFolder.addFolder({ title: "Quality" });
     cloudsQualityFolder.addBinding(this.postMaterial.uniforms.maxRMDistance, "value", {
@@ -370,7 +383,7 @@ class CloudsDemo {
 
           color1: { value: new Color().setRGB(0.874509804, 0.874509804, 0.796078431) }, // #dfdfcb
           color2: { value: new Color().setRGB(1, 1, 0.870588235) }, // #ffffde
-          color3: { value: new Color().setRGB(1.0,0.95,0.8) },
+          color3: { value: new Color().setRGB(0.19, 0.16, 0.00) },
           color4: { value: new Color() },
 
           alpha1: { value: 0.99 },
@@ -382,6 +395,9 @@ class CloudsDemo {
           fogColor: { value: new Color().setRGB(0.5, 0.0, 0.0) },
           fogTransparency: { value: 0.99 },
           fogEnabled: { value: false },
+
+          sunDirection: { value: new Vector3(1,1,1).normalize() },
+          sunCastDistance: { value: 20.0 },
         }
       });
     } else {

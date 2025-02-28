@@ -64,6 +64,8 @@ class CloudsDemo {
     this.undersampling = 2;
     this.detailsWindSpeed = 200.0;
     this.detailsWindChangeSpeed = 0.05;
+    
+    this.geometryMultisampling = 8;
 
     this.init3D();
     this.initPost()
@@ -266,7 +268,12 @@ class CloudsDemo {
       max: 4,
       step: 1,
     }).on("change", () => this.initPost());
-
+    cloudsQualityFolder.addBinding(this, "geometryMultisampling", {
+      label: "Geometry MS",
+      min: 0,
+      max: 16,
+      step: 1.0
+    }).on("change", () => this.initPost());
 
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
     cloudsDetailsFolder.addBinding(this.postMaterial.uniforms.detailsScale, "value", {
@@ -316,7 +323,7 @@ class CloudsDemo {
 
   initPost() {
     const [resolutionX, resolutionY] = [this.renderer.getPixelRatio() * window.innerWidth, this.renderer.getPixelRatio() * window.innerHeight];
-    this.rt = new WebGLRenderTarget(resolutionX, resolutionY);
+    this.rt = new WebGLRenderTarget(resolutionX, resolutionY, { samples: this.geometryMultisampling });
     this.rt.depthTexture = new DepthTexture(resolutionX, resolutionY);
 
     let [cloudsResolutionX, cloudsResolutionY] = [resolutionX, resolutionY];

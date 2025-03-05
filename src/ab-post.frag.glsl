@@ -171,9 +171,7 @@ void main() {
 #endif
 
     vec2 frag_coord = gl_FragCoord.xy;
-#ifdef DITHERING
     frag_coord += vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5);
-#endif
     // Screenspace coordinates in range [(-1, -1), (1, 1)]
     vec2 screen_offset = frag_coord * viewportSizeInverse;
 
@@ -256,6 +254,8 @@ void main() {
 #ifdef MERGE_COLOR
     gl_FragColor.rgb = mix(color_acc, color, transparency);
     gl_FragColor.a = 1.0;
+    // https://discourse.threejs.org/t/different-color-output-when-rendering-to-webglrendertarget/57494/2
+    gl_FragColor = sRGBTransferOETF(gl_FragColor);
 #else
     gl_FragColor.rgb = color_acc;
     gl_FragColor.a = 1.0 - transparency;

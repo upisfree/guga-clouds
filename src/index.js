@@ -1,7 +1,4 @@
 import {
-  Matrix3,
-  Matrix4,
-  MeshPhongMaterial,
   OrthographicCamera,
   ShaderMaterial,
   Vector3,
@@ -13,14 +10,12 @@ import {
   Clock,
   Color,
   CylinderGeometry,
-  DirectionalLight,
   DoubleSide,
   GridHelper,
   IcosahedronGeometry,
   LatheGeometry,
   Mesh,
   MeshStandardMaterial,
-  NeutralToneMapping,
   OctahedronGeometry,
   PerspectiveCamera,
   PlaneGeometry,
@@ -34,21 +29,19 @@ import {
   WebGLRenderer,
   TextureLoader,
   LinearFilter,
-  RepeatWrapping, NearestFilter, MeshBasicMaterial
+  RepeatWrapping, NearestFilter, MeshBasicMaterial,
+  NoToneMapping
 } from 'three';
 import { GLTFLoader } from 'three/addons';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
-import CloudsUpisfree from './clouds-upisfree';
-import CloudsShadertoy from './clouds-shadertoy';
 import abPostVS from './ab-post.vertex.glsl?raw';
 import abPostFS from './ab-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { cameraFar, cameraNear } from 'three/tsl';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -64,7 +57,7 @@ class CloudsDemo {
     this.undersampling = 2;
     this.detailsWindSpeed = 200.0;
     this.detailsWindChangeSpeed = 0.05;
-    
+
     this.geometryMultisampling = 8;
 
     this.init3D();
@@ -105,13 +98,14 @@ class CloudsDemo {
     this.stats = new Stats();
     this.container.appendChild(this.stats.dom);
     this.showStats = true;
+    this.skipPostProcessing = false;
 
     this.scene = new Scene();
     this.scene.background = new Color(0xa4cbf4);
     // this.scene.fog = new Fog(0xb5d9f8, 150, 310);
 
-    this.renderer.toneMapping = NeutralToneMapping;
-    this.renderer.toneMappingExposure = 1.5;
+    this.renderer.toneMapping = NoToneMapping;
+    this.renderer.toneMappingExposure = 2.2;
 
     this.clock = new Clock();
 
@@ -132,7 +126,7 @@ class CloudsDemo {
     // );
     this.camera.position.set(0, 50, 100);
     this.camera.rotation.set(
-      0,0,0
+      0, 0, 0
     );
 
     if (location.search.includes('upisfree')) {
@@ -142,9 +136,9 @@ class CloudsDemo {
         -135
       );
       this.camera.rotation.set(
-      -2.8565540938041662,
-      0.4430787851422483,
-      3.01662397220497
+        -2.8565540938041662,
+        0.4430787851422483,
+        3.01662397220497
       );
     }
 
@@ -160,9 +154,9 @@ class CloudsDemo {
   }
 
   initPane() {
-    const cloudsFolder = this.pane.addFolder({title: "Clouds"});
+    const cloudsFolder = this.pane.addFolder({ title: "Clouds" });
 
-    const cloudsShapeFolder = cloudsFolder.addFolder({title: "Shape", expanded: false});
+    const cloudsShapeFolder = cloudsFolder.addFolder({ title: "Shape", expanded: false });
     cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
       label: "Scale",
       min: 1.0,
@@ -319,6 +313,7 @@ class CloudsDemo {
       label: "Background",
       color: { type: 'float' },
     });
+    helpersFolder.addBinding(this, "skipPostProcessing", { label: "Skip Post" });
   }
 
   initPost() {
@@ -338,7 +333,7 @@ class CloudsDemo {
 
       const scale = 2 ** this.undersampling;
       [cloudsResolutionX, cloudsResolutionY] = [Math.ceil(resolutionX / scale), Math.ceil(resolutionY / scale)];
-      this.cloudsRt = new WebGLRenderTarget(cloudsResolutionX, cloudsResolutionY);
+      this.cloudsRt = new WebGLRenderTarget(cloudsResolutionX, cloudsResolutionY, { colorSpace: this.renderer.outputColorSpace });
 
       cloudsShaderPrefix = `
       #define DEPTH_COORD_MULTIPLIER ${scale}
@@ -350,12 +345,12 @@ class CloudsDemo {
         uniforms: {
           sceneTexture: { value: null },
           cloudsTexture: { value: null },
-          viewportSizeInverse: { value: new Vector2(1/resolutionX, 1/resolutionY) },
+          viewportSizeInverse: { value: new Vector2(1 / resolutionX, 1 / resolutionY) },
         }
       });
 
       this.metaScene = new Scene();
-      this.metaScene.add(new Mesh(new PlaneGeometry(2,2), this.metaMaterial));
+      this.metaScene.add(new Mesh(new PlaneGeometry(2, 2), this.metaMaterial));
     }
 
     this.postCamera = new OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
@@ -367,7 +362,7 @@ class CloudsDemo {
           cameraFar: { value: this.camera.far },
           cameraNear: { value: this.camera.near },
           worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
-          viewportSizeInverse: { value: new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY) },
+          viewportSizeInverse: { value: new Vector2(1 / cloudsResolutionX, 1 / cloudsResolutionY) },
           worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
           tDiffuse: { value: null },
           tDepth: { value: null },
@@ -404,17 +399,17 @@ class CloudsDemo {
           fogTransparency: { value: 0.99 },
           fogEnabled: { value: false },
 
-          sunDirection: { value: new Vector3(1,1,1).normalize() },
+          sunDirection: { value: new Vector3(1, 1, 1).normalize() },
           sunCastDistance: { value: 20.0 },
         }
       });
     } else {
       this.postMaterial.fragmentShader = cloudsShaderPrefix + abPostFS;
-      this.postMaterial.uniforms.viewportSizeInverse.value = new Vector2(1/cloudsResolutionX, 1/cloudsResolutionY);
+      this.postMaterial.uniforms.viewportSizeInverse.value = new Vector2(1 / cloudsResolutionX, 1 / cloudsResolutionY);
       this.postMaterial.needsUpdate = true;
     }
     this.postScene = new Scene();
-    this.postScene.add(new Mesh(new PlaneGeometry(2,2), this.postMaterial));
+    this.postScene.add(new Mesh(new PlaneGeometry(2, 2), this.postMaterial));
   }
 
   initLights() {
@@ -462,6 +457,10 @@ class CloudsDemo {
     let prevMaterial = mesh.material;
     mesh.material = new MeshBasicMaterial();
     MeshBasicMaterial.prototype.copy.call(mesh.material, prevMaterial);
+
+    // This kinda fixes transparency problem
+    mesh.material.alphaHash = true;
+    mesh.material.depthWrite = true;
   }
 
   update(timestamp) {
@@ -477,34 +476,39 @@ class CloudsDemo {
   }
 
   render() {
-    this.renderer.setRenderTarget(this.rt);
-    this.renderer.render(this.scene, this.camera);
-    this.postMaterial.uniforms.tDiffuse.value = this.rt.texture;
-    this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
-    this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
-    this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
-    this.postMaterial.uniforms.timeSeconds.value = this.clock.getElapsedTime();
-    this.postMaterial.uniforms.detailsOffset.value = new Vector3(
-      Math.cos(this.clock.getElapsedTime() * this.detailsWindChangeSpeed),
-      Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
-      Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed)
-    ).multiplyScalar(this.detailsWindSpeed);
-
-    if (this.undersampling > 0) {
-      this.renderer.setRenderTarget(this.cloudsRt);
-      this.renderer.setClearColor("black", 0.0);
-      this.renderer.clear(true);
-      this.renderer.render(this.postScene, this.postCamera);
-
+    if (this.skipPostProcessing) {
       this.renderer.setRenderTarget(null);
-
-      this.metaMaterial.uniforms.sceneTexture.value = this.rt.texture;
-      this.metaMaterial.uniforms.cloudsTexture.value = this.cloudsRt.texture;
-
-      this.renderer.render(this.metaScene, this.postCamera);
+      this.renderer.render(this.scene, this.camera);
     } else {
-      this.renderer.setRenderTarget(null);
-      this.renderer.render(this.postScene, this.postCamera);
+      this.renderer.setRenderTarget(this.rt);
+      this.renderer.render(this.scene, this.camera);
+      this.postMaterial.uniforms.tDiffuse.value = this.rt.texture;
+      this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
+      this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
+      this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
+      this.postMaterial.uniforms.timeSeconds.value = this.clock.getElapsedTime();
+      this.postMaterial.uniforms.detailsOffset.value = new Vector3(
+        Math.cos(this.clock.getElapsedTime() * this.detailsWindChangeSpeed),
+        Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
+        Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed)
+      ).multiplyScalar(this.detailsWindSpeed);
+
+      if (this.undersampling > 0) {
+        this.renderer.setRenderTarget(this.cloudsRt);
+        this.renderer.setClearColor("black", 0.0);
+        this.renderer.clear(true);
+        this.renderer.render(this.postScene, this.postCamera);
+
+        this.renderer.setRenderTarget(null);
+
+        this.metaMaterial.uniforms.sceneTexture.value = this.rt.texture;
+        this.metaMaterial.uniforms.cloudsTexture.value = this.cloudsRt.texture;
+
+        this.renderer.render(this.metaScene, this.postCamera);
+      } else {
+        this.renderer.setRenderTarget(null);
+        this.renderer.render(this.postScene, this.postCamera);
+      }
     }
   }
 
@@ -533,7 +537,7 @@ class CloudsDemo {
     object.position.set(-300, 0, 200);
     this.scene.add(object);
 
-    object = new Mesh(new IcosahedronGeometry( 75, 1 ), material);
+    object = new Mesh(new IcosahedronGeometry(75, 1), material);
     object.position.set(-100, 0, 200);
     this.scene.add(object);
 
@@ -541,26 +545,26 @@ class CloudsDemo {
     object.position.set(100, 0, 200);
     this.scene.add(object);
 
-    object = new Mesh(new TetrahedronGeometry( 75, 0), material);
+    object = new Mesh(new TetrahedronGeometry(75, 0), material);
     object.position.set(300, 0, 200);
     this.scene.add(object);
 
     //
 
     object = new Mesh(new PlaneGeometry(100, 100, 4, 4), material);
-    object.position.set(- 300, 0, 0 );
+    object.position.set(- 300, 0, 0);
     this.scene.add(object);
 
     object = new Mesh(new BoxGeometry(100, 100, 100, 4, 4, 4), material);
-    object.position.set(- 100, 0, 0 );
+    object.position.set(- 100, 0, 0);
     this.scene.add(object);
 
     object = new Mesh(new CircleGeometry(50, 20, 0, Math.PI * 2), material);
-    object.position.set(100, 0, 0 );
+    object.position.set(100, 0, 0);
     this.scene.add(object);
 
     object = new Mesh(new RingGeometry(10, 50, 20, 5, 0, Math.PI * 2), material);
-    object.position.set(300, 0, 0 );
+    object.position.set(300, 0, 0);
     this.scene.add(object);
 
     //
@@ -571,17 +575,17 @@ class CloudsDemo {
 
     const points = [];
 
-    for ( let i = 0; i < 50; i ++ ) {
+    for (let i = 0; i < 50; i++) {
 
-      points.push(new Vector2( Math.sin( i * 0.2 ) * Math.sin( i * 0.1 ) * 15 + 50, ( i - 5 ) * 2 ));
+      points.push(new Vector2(Math.sin(i * 0.2) * Math.sin(i * 0.1) * 15 + 50, (i - 5) * 2));
 
     }
 
-    object = new Mesh(new LatheGeometry( points, 20), material);
+    object = new Mesh(new LatheGeometry(points, 20), material);
     object.position.set(-100, 0, -200);
     this.scene.add(object);
 
-    object = new Mesh(new TorusGeometry( 50, 20, 20, 20), material);
+    object = new Mesh(new TorusGeometry(50, 20, 20, 20), material);
     object.position.set(100, 0, -200);
     this.scene.add(object);
 

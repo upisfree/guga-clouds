@@ -7,4 +7,6 @@ void main() {
     vec4 cloudsSample = texture2D(cloudsTexture, gl_FragCoord.xy * viewportSizeInverse);
     gl_FragColor.rgb = mix(sceneSample.rgb, cloudsSample.rgb, cloudsSample.a);
     gl_FragColor.a = 1.0;
+    // https://discourse.threejs.org/t/different-color-output-when-rendering-to-webglrendertarget/57494/2
+    gl_FragColor = sRGBTransferOETF(gl_FragColor);
 }

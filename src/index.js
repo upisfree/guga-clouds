@@ -168,6 +168,21 @@ class CloudsDemo {
       min: -1000,
       max: 1000,
     });
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsAltitudeShift, "value", {
+      label: "Alt. shift",
+      min: -500,
+      max: 500,
+    });
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsFloorAltitude, "value", {
+      label: "Alt. floor",
+      min: 0,
+      max: 500,
+    });
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsCeilAltitude, "value", {
+      label: "Alt. ceiling",
+      min: 0,
+      max: 1000,
+    });
     cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsTransitionalLayerScale, "value", {
       label: "Tr. layer",
       min: 0.1,
@@ -373,7 +388,10 @@ class CloudsDemo {
           ditherDepth: { value: 1.0 },
           densityThreshold: { value: 4.0 },
           cloudsScale: { value: 120.0 },
-          cloudsAltitude: { value: -370.0 },
+          cloudsAltitude: { value: -110.0 },
+          cloudsAltitudeShift: { value: -180 },
+          cloudsFloorAltitude: { value: 40 },
+          cloudsCeilAltitude: { value: 1000 },
           cloudsTransitionalLayerScale: { value: 1.95 },
           maxRMDistance: { value: 10000.0 },
           minRMStep: { value: 10.0 },

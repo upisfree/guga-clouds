@@ -21,6 +21,9 @@ uniform float maxRMDistance;
 uniform float minRMStep;
 uniform float rmStepScale;
 uniform float cloudsAltitude;
+uniform float cloudsAltitudeShift;
+uniform float cloudsFloorAltitude;
+uniform float cloudsCeilAltitude;
 uniform float cloudsTransitionalLayerScale;
 uniform vec3 color1;
 uniform vec3 color2;
@@ -123,7 +126,7 @@ float SpiralNoise3D(vec3 p) {
 // This is similar to Signed Distance Field (SDF), but the value does not (or does it?) represent exact distance to the surface.
 float get_cloud_distance(vec3 p) {
   // Offset clouds field along vertical axis, scale along all axes
-  p.y -= cloudsAltitude;
+  p.y -= cloudsAltitude + cloudsAltitudeShift;
   p /= cloudsScale;
 
   // Change clouds density depending on altitude
@@ -199,7 +202,13 @@ void main() {
     float max_dist = maxRMDistance;
     max_dist = min(max_dist, l);
 
-    dist = 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
+    if (abs(dir.y) > 0.0) {
+      vec2 limit_distances = (vec2(cloudsAltitude - pos.y) + vec2(-cloudsFloorAltitude, cloudsCeilAltitude)) / dir.y;
+      max_dist = min(max_dist, max(limit_distances.x, limit_distances.y));
+      dist = max(0.0, min(limit_distances.x, limit_distances.y));
+    }
+
+    dist += 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
     pos += dist * dir;
 
     float prev_transparency = 1.0, prev_dist = dist;

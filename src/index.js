@@ -183,6 +183,16 @@ class CloudsDemo {
       min: 0,
       max: 1000,
     });
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsCeilSmoothingRange, "value", {
+      label: "Ceil smooth",
+      min: 0,
+      max: 500,
+    });
+    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsFloorSmoothingRange, "value", {
+      label: "Floor smooth",
+      min: 0,
+      max: 500,
+    });
     cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsTransitionalLayerScale, "value", {
       label: "Tr. layer",
       min: 0.1,
@@ -392,6 +402,8 @@ class CloudsDemo {
           cloudsAltitudeShift: { value: -180 },
           cloudsFloorAltitude: { value: 40 },
           cloudsCeilAltitude: { value: 1000 },
+          cloudsFloorSmoothingRange: { value: 100.0 },
+          cloudsCeilSmoothingRange: { value: 100.0 },
           cloudsTransitionalLayerScale: { value: 1.95 },
           maxRMDistance: { value: 10000.0 },
           minRMStep: { value: 10.0 },

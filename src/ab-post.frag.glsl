@@ -24,6 +24,8 @@ uniform float cloudsAltitude;
 uniform float cloudsAltitudeShift;
 uniform float cloudsFloorAltitude;
 uniform float cloudsCeilAltitude;
+uniform float cloudsFloorSmoothingRange;
+uniform float cloudsCeilSmoothingRange;
 uniform float cloudsTransitionalLayerScale;
 uniform vec3 color1;
 uniform vec3 color2;
@@ -125,12 +127,17 @@ float SpiralNoise3D(vec3 p) {
 // Negative value is returned for points inside the cloud, positive for points outside.
 // This is similar to Signed Distance Field (SDF), but the value does not (or does it?) represent exact distance to the surface.
 float get_cloud_distance(vec3 p) {
+  float floorAltitude = cloudsAltitude - cloudsFloorAltitude;
+  float ceilingAltitude = cloudsAltitude + cloudsCeilAltitude;
+  float edgeSmoothing = 1.0 - smoothstep(floorAltitude, floorAltitude + cloudsFloorSmoothingRange, p.y);
+  edgeSmoothing += smoothstep(ceilingAltitude - cloudsCeilSmoothingRange, ceilingAltitude, p.y);
+
   // Offset clouds field along vertical axis, scale along all axes
   p.y -= cloudsAltitude + cloudsAltitudeShift;
   p /= cloudsScale;
 
   // Change clouds density depending on altitude
-  float final = p.y * cloudsTransitionalLayerScale;
+  float final = p.y * cloudsTransitionalLayerScale + edgeSmoothing;
 
   final -= SpiralNoiseC(p.xyz);  // mid-range noise
   final += SpiralNoiseC(p.zxy * 0.123 + 100.0) * 3.0; // large scale terrain features

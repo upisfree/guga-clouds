@@ -42,6 +42,7 @@ import abPostFS from './ab-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -89,7 +90,9 @@ class CloudsDemo {
     // 3D setup
     this.renderer = new WebGLRenderer({
       powerPreference: 'high-performance',
-      antialias: true,
+      antialias: false,
+      stencil: false,
+      depth: false,
       alpha: false,
       logarithmicDepthBuffer: true,
     });
@@ -117,6 +120,10 @@ class CloudsDemo {
     this.controls.settings.translation.sensitivity = 100;
     this.controls.settings.translation.boostMultiplier = 10;
     this.controls.settings.rotation.sensitivity = 2.5;
+
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(new EffectPass(this.camera, new BloomEffect()));
 
     // this.camera.position.set(343, 371, -536);
     // this.camera.rotation.set(
@@ -506,6 +513,10 @@ class CloudsDemo {
   }
 
   render() {
+    this.composer.render();
+
+    return;
+
     if (this.skipPostProcessing) {
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.scene, this.camera);

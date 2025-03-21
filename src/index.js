@@ -62,6 +62,8 @@ class CloudsDemo {
 
     this.geometryMultisampling = 8;
 
+    this.clock = new Clock(true);
+
     this.init3D();
     this.initPost()
     // this.initObjects();
@@ -81,8 +83,6 @@ class CloudsDemo {
     // if (location.search.includes('shadertoy')) {
     //   this.scene.add(this.cloudsShadertoy);
     // }
-
-    this.clock = new Clock(true);
 
     this.update();
   }
@@ -111,8 +111,6 @@ class CloudsDemo {
     this.renderer.toneMapping = NoToneMapping;
     this.renderer.toneMappingExposure = 2.2;
 
-    this.clock = new Clock();
-
     this.camera = new PerspectiveCamera(60, 1, 0.1, 100000);
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
@@ -128,7 +126,7 @@ class CloudsDemo {
       new EffectPass(
         this.camera,
         new CloudsEffect(
-          this.scene, this.camera, {
+          this.scene, this.camera, this.clock,{
             noiseTexture
           }
         )
@@ -571,9 +569,11 @@ class CloudsDemo {
     this.camera.updateProjectionMatrix();
 
     let pixelRatio = window.devicePixelRatio;
+
+    // composer.setSize() учитывает pixel ratio WebGLRenderer
     this.renderer.setPixelRatio(pixelRatio);
 
-    this.renderer.setSize(this.containerBounds.width, this.containerBounds.height);
+    this.composer.setSize(this.containerBounds.width, this.containerBounds.height);
   }
 
   initObjects() {

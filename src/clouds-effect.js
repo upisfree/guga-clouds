@@ -24,7 +24,8 @@ class CloudsEffect extends Effect {
 
   renderTarget = null;
 
-  constructor(scene, camera, {
+  // clock общий для всей игры
+  constructor(scene, camera, clock, {
     noiseTexture,
     undersampling = 0, // TODO: onChange getter setter
     geometryMultisampling = 8,
@@ -42,7 +43,7 @@ class CloudsEffect extends Effect {
 
       defines: new Map([
         ['DEPTH_COORD_MULTIPLIER', '1'],
-        ['MERGE_COLOR', '1'] // true?
+        ['MERGE_COLOR', 'false']
       ]),
 
       uniforms: new Map([
@@ -52,8 +53,6 @@ class CloudsEffect extends Effect {
         ['worldCameraPosition', new Uniform(camera.getWorldPosition(new Vector3()))], // TODO: можно забирать напрямую с камеры
         ['viewportSizeInverse', new Uniform(new Vector2(1, 1))],
         ['worldCameraUnprojectionMatrix', new Uniform(camera.matrixWorld.clone().multiply(camera.projectionMatrixInverse))],
-        ['tDiffuse', new Uniform(null)],
-        ['tDepth', new Uniform(null)],
         ['timeSeconds', new Uniform(0)],
 
         ['noiseTexture', new Uniform(noiseTexture)],
@@ -101,15 +100,17 @@ class CloudsEffect extends Effect {
 
     this.scene = scene;
     this.camera = camera;
+    this.clock = clock;
 
     this.undersampling = undersampling;
     this.geometryMultisampling = geometryMultisampling;
 
+    this.detailsWindSpeed = detailsWindSpeed;
+    this.detailsWindChangeSpeed = detailsWindChangeSpeed;
+
     this.renderTarget = new WebGLRenderTarget(1, 1, { samples: this.geometryMultisampling });
     this.renderTarget.texture.name = 'Clouds.Intermediate';
     this.renderTarget.depthTexture = new DepthTexture(); // TODO: в примерах либы у нее нигде не задается размер, это проблема?
-    this.uniforms.get('tDiffuse').value = this.renderTarget.texture;
-    this.uniforms.get('tDepth').value = this.renderTarget.depthTexture;
 
     // TODO: добавить в поля сверху
     this.postCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -125,34 +126,43 @@ class CloudsEffect extends Effect {
   }
 
   // deltaTime in seconds
-  // update(renderer, inputBuffer, deltaTime) {
-  //   const scene = this.scene;
-  //   const camera = this.camera;
-  //   const uniforms = this.uniforms;
-  //
-  //   // update uniforms
-  //   // uniforms.get('tDiffuse').value = this.renderTarget.texture;
-  //   // uniforms.get('tDepth').value = this.renderTarget.depthTexture;
-  //   uniforms.get('worldCameraPosition').value = this.camera.getWorldPosition(new Vector3()); // TODO: reuse vector
-  //   uniforms.get('worldCameraUnprojectionMatrix').value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
-  //   uniforms.get('timeSeconds').value = performance.now();
-  //   // uniforms.timeSeconds.value = this.clock.getElapsedTime();
-  //   // uniforms.detailsOffset.value = new Vector3(
-  //   //   Math.cos(this.clock.getElapsedTime() * this.detailsWindChangeSpeed),
-  //   //   Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
-  //   //   Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed)
-  //   // ).multiplyScalar(this.detailsWindSpeed);
-  //
-  //   super.update(renderer, inputBuffer, deltaTime);
-  // }
+  update(renderer, inputBuffer, deltaTime) {
+    const scene = this.scene;
+    const camera = this.camera;
+    const clock = this.clock;
+    const uniforms = this.uniforms;
+
+    // update uniforms
+    uniforms.get('worldCameraPosition').value = camera.getWorldPosition(new Vector3()); // TODO: reuse vector
+    uniforms.get('worldCameraUnprojectionMatrix').value = camera.matrixWorld.clone().multiply(camera.projectionMatrixInverse);
+    uniforms.get('timeSeconds').value = clock.getElapsedTime();
+    uniforms.get('detailsOffset').value = new Vector3(
+      Math.cos(clock.getElapsedTime() * this.detailsWindChangeSpeed),
+      Math.sin(clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
+      Math.sin(clock.getElapsedTime() * this.detailsWindChangeSpeed)
+    ).multiplyScalar(this.detailsWindSpeed);
+
+    super.update(renderer, inputBuffer, deltaTime);
+  }
 
   setSize(width, height) {
+    const uniforms = this.uniforms;
+
     const resolution = this.resolution;
     resolution.setBaseSize(width, height);
     const w = resolution.width;
     const h = resolution.height;
 
+    // TODO: resolution factor for optimization? only works with non merged color?
+
     this.renderTarget.setSize(w, h);
+    // this.renderTarget.depthTexture = new DepthTexture(w, h); // хз?
+
+    let cloudsResolutionX = w;
+    let cloudsResolutionY = h;
+
+    uniforms.get('viewportSizeInverse').value = new Vector2(1 / cloudsResolutionX, 1 / cloudsResolutionY);
+
     // this.renderTarget.depthTexture = new DepthTexture(w, h); // хз?
 
     // this.blurPass.setSize(width, height);

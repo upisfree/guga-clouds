@@ -4,10 +4,7 @@
 // If MERGE_COLOR is defined, this shader will read a color value from pre-rendered frame texture and merge it with
 // clouds image, resulting in an opaque image.
 // Otherwise, the shader will render clouds only, saving accumulated clouds transparency in alpha channel of resulting image.
-#ifdef MERGE_COLOR
-uniform sampler2D tDiffuse;
-#endif
-uniform sampler2D tDepth;
+
 uniform vec2 viewportSizeInverse;
 uniform vec3 worldCameraPosition;
 uniform mat4 worldCameraUnprojectionMatrix;
@@ -159,27 +156,25 @@ float linearize_depth(float depth){
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
     // Integer screenspace coordinates for texelFetch calls
-    ivec2 texelCoords = ivec2(uv.xy);
+    ivec2 texelCoords = ivec2(gl_FragCoord.xy);
 
 #ifdef MERGE_COLOR
     // Pixel of previously rendered scene
     vec3 color = inputColor.rgb;
-//    vec3 color = texelFetch(tDiffuse, texelCoords, 0).rgb;
 #else
     vec3 color = vec3(0.0);
 #endif
 
     // Value from depth buffer
-    float depthTexel = depth;
-//    float depthTexel = texelFetch(tDepth, texelCoords * DEPTH_COORD_MULTIPLIER, 0).r;
+    float depthTexel = texelFetch(depthBuffer, texelCoords * DEPTH_COORD_MULTIPLIER, 0).r;
     //// Alternative if texelFetch won't work everywhere
-    //float depthTexel = texture2D(tDepth, uv.xy * viewportSizeInverse).r;
+    //float depthTexel = texture2D(tDepth, gl_FragCoord.xy * viewportSizeInverse).r;
 
 #ifdef USE_LOGDEPTHBUF
   depthTexel = linearize_depth(depthTexel);
 #endif
 
-    vec2 frag_coord = uv.xy;
+    vec2 frag_coord = gl_FragCoord.xy;
     frag_coord += vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5);
     // Screenspace coordinates in range [(-1, -1), (1, 1)]
     vec2 screen_offset = frag_coord * viewportSizeInverse;

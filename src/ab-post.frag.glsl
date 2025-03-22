@@ -265,7 +265,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
     outputColor.rgb = mix(color_acc, color, transparency);
     outputColor.a = 1.0;
     // https://discourse.threejs.org/t/different-color-output-when-rendering-to-webglrendertarget/57494/2
-    outputColor = sRGBTransferOETF(outputColor);
+//    outputColor = sRGBTransferOETF(outputColor);
 #else
     outputColor.rgb = color_acc;
     outputColor.a = 1.0 - transparency;

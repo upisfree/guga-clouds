@@ -30,7 +30,7 @@ import {
   TextureLoader,
   LinearFilter,
   RepeatWrapping, NearestFilter, MeshBasicMaterial,
-  NoToneMapping
+  NoToneMapping, SRGBColorSpace, HalfFloatType
 } from 'three';
 import { GLTFLoader } from 'three/addons';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
@@ -97,6 +97,7 @@ class CloudsDemo {
       alpha: false,
       logarithmicDepthBuffer: true,
     });
+    this.renderer.outputColorSpace = SRGBColorSpace;
     this.container.appendChild(this.renderer.domElement);
 
     this.stats = new Stats();
@@ -108,8 +109,8 @@ class CloudsDemo {
     this.scene.background = new Color(0xa4cbf4);
     // this.scene.fog = new Fog(0xb5d9f8, 150, 310);
 
-    this.renderer.toneMapping = NoToneMapping;
-    this.renderer.toneMappingExposure = 2.2;
+    this.renderer.toneMapping = NoToneMapping; // так и должно быть, в случае тон маппинга, нужно задавать его через ToneMappingEffect
+    this.renderer.toneMappingExposure = 1;
 
     this.camera = new PerspectiveCamera(60, 1, 0.1, 100000);
 
@@ -126,7 +127,9 @@ class CloudsDemo {
       }
     );
 
-    this.composer = new EffectComposer(this.renderer);
+    this.composer = new EffectComposer(this.renderer, {
+      frameBufferType: HalfFloatType
+    });
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new EffectPass(this.camera, this.cloudsEffect));
     // this.composer.addPass(new EffectPass(this.camera, new BloomEffect()));

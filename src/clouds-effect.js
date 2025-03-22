@@ -25,10 +25,28 @@ class CloudsEffect extends Effect {
   scene = null;
   camera = null;
 
-  undersampling = 0;
-  geometryMultisampling = 0;
-
   renderTarget = null;
+
+
+  _undersampling = 0;
+
+  get undersampling() {
+    return this._undersampling;
+  }
+
+  set undersampling(value) {
+
+  }
+
+  _geometryMultisampling = 0;
+
+  get geometryMultisampling() {
+    return this._geometryMultisampling;
+  }
+
+  set geometryMultisampling(value) {
+    this._geometryMultisampling = value;
+  }
 
   // clock общий для всей игры
   constructor(scene, camera, clock, {
@@ -114,6 +132,9 @@ class CloudsEffect extends Effect {
     this.renderTarget = new WebGLRenderTarget(1, 1, { samples: this.geometryMultisampling });
     this.renderTarget.texture.name = 'Clouds.Intermediate';
     this.renderTarget.depthTexture = new DepthTexture(); // TODO: в примерах либы у нее нигде не задается размер, это проблема?
+    //
+    // this.rt = new WebGLRenderTarget(resolutionX, resolutionY, { samples: this.geometryMultisampling });
+    // this.rt.depthTexture = new DepthTexture(resolutionX, resolutionY);
 
     const resolution = this.resolution = new Resolution(this, Resolution.AUTO_SIZE, Resolution.AUTO_SIZE, 1);
     resolution.addEventListener('change', (e) => this.setSize(resolution.baseWidth, resolution.baseHeight));

@@ -9,8 +9,14 @@ import {
   Uniform,
   Vector2,
   Vector3,
+  Matrix4,
   WebGLRenderTarget
 } from 'three';
+
+const _worldCameraPosition = new Vector3();
+const _viewportSizeInverse = new Vector2(1, 1);
+const _worldCameraUnprojectionMatrix = new Matrix4();
+const _detailsOffset = new Vector3();
 
 class CloudsEffect extends Effect {
   // сразу задаю поля для переезда на тайпскрипт в будущем
@@ -31,7 +37,6 @@ class CloudsEffect extends Effect {
     geometryMultisampling = 8,
     detailsWindSpeed = 200.0,
     detailsWindChangeSpeed = 0.05,
-    // TODO: вынести дефолтные опции
   }) {
     super('CloudsEffect', fragmentShader, {
       blendFunction: BlendFunction.NORMAL,
@@ -43,16 +48,13 @@ class CloudsEffect extends Effect {
 
       defines: new Map([
         ['DEPTH_COORD_MULTIPLIER', '1'],
-        ['MERGE_COLOR', 'false']
+        ['MERGE_COLOR', 'true']
       ]),
 
       uniforms: new Map([
-        // библиотека задает это сама
-        // ['cameraNear', new Uniform(camera.near)],
-        // ['cameraFar', new Uniform(camera.far)],
-        ['worldCameraPosition', new Uniform(camera.getWorldPosition(new Vector3()))], // TODO: можно забирать напрямую с камеры
-        ['viewportSizeInverse', new Uniform(new Vector2(1, 1))],
-        ['worldCameraUnprojectionMatrix', new Uniform(camera.matrixWorld.clone().multiply(camera.projectionMatrixInverse))],
+        ['worldCameraPosition', new Uniform(_worldCameraPosition)], // TODO: можно забирать напрямую с камеры
+        ['viewportSizeInverse', new Uniform(_viewportSizeInverse)],
+        ['worldCameraUnprojectionMatrix', new Uniform(_worldCameraUnprojectionMatrix)],
         ['timeSeconds', new Uniform(0)],
 
         ['noiseTexture', new Uniform(noiseTexture)],
@@ -74,10 +76,10 @@ class CloudsEffect extends Effect {
 
         ['detailsScale', new Uniform(36.0)],
         ['detailsIntensity', new Uniform(1.39)],
-        ['detailsOffset', new Uniform(new Vector3(0, 0, 0))],
+        ['detailsOffset', new Uniform(_detailsOffset)],
 
         // TODO: проименовать цвета, чтобы они отражали их значение
-        // TODO: вынести цвета отсюда повыше
+        // TODO: вынести цвета отсюда повыше, когда настрою чистовые
         ['color1', new Uniform(new Color().setRGB(0.874509804, 0.874509804, 0.796078431))], // #dfdfcb
         ['color2', new Uniform(new Color().setRGB(1, 1, 0.870588235))], // #ffffde
         ['color3', new Uniform(new Color().setRGB(0.19, 0.16, 0.00))],
@@ -102,6 +104,7 @@ class CloudsEffect extends Effect {
     this.camera = camera;
     this.clock = clock;
 
+    // config
     this.undersampling = undersampling;
     this.geometryMultisampling = geometryMultisampling;
 
@@ -112,12 +115,7 @@ class CloudsEffect extends Effect {
     this.renderTarget.texture.name = 'Clouds.Intermediate';
     this.renderTarget.depthTexture = new DepthTexture(); // TODO: в примерах либы у нее нигде не задается размер, это проблема?
 
-    // TODO: добавить в поля сверху
-    this.postCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    this.postScene = new Scene();
-    this.postScene.add(new Mesh(new PlaneGeometry(2, 2), this.postMaterial));
-
-    const resolution = this.resolution = new Resolution(this, window.innerWidth, window.innerHeight, 1);
+    const resolution = this.resolution = new Resolution(this, Resolution.AUTO_SIZE, Resolution.AUTO_SIZE, 1);
     resolution.addEventListener('change', (e) => this.setSize(resolution.baseWidth, resolution.baseHeight));
   }
 
@@ -131,15 +129,19 @@ class CloudsEffect extends Effect {
     const camera = this.camera;
     const clock = this.clock;
     const uniforms = this.uniforms;
+    const time = clock.getElapsedTime();
 
     // update uniforms
-    uniforms.get('worldCameraPosition').value = camera.getWorldPosition(new Vector3()); // TODO: reuse vector
-    uniforms.get('worldCameraUnprojectionMatrix').value = camera.matrixWorld.clone().multiply(camera.projectionMatrixInverse);
-    uniforms.get('timeSeconds').value = clock.getElapsedTime();
-    uniforms.get('detailsOffset').value = new Vector3(
-      Math.cos(clock.getElapsedTime() * this.detailsWindChangeSpeed),
-      Math.sin(clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
-      Math.sin(clock.getElapsedTime() * this.detailsWindChangeSpeed)
+    uniforms.get('timeSeconds').value = time;
+    // worldCameraPosition
+    camera.getWorldPosition(_worldCameraPosition);
+    // worldCameraUnprojectionMatrix
+    _worldCameraUnprojectionMatrix.copy(camera.matrixWorld).multiply(camera.projectionMatrixInverse);
+    // detailsOffset
+    _detailsOffset.set(
+      Math.cos(time * this.detailsWindChangeSpeed),
+      Math.sin(time * this.detailsWindChangeSpeed * 0.3421),
+      Math.sin(time * this.detailsWindChangeSpeed)
     ).multiplyScalar(this.detailsWindSpeed);
 
     super.update(renderer, inputBuffer, deltaTime);
@@ -161,7 +163,8 @@ class CloudsEffect extends Effect {
     let cloudsResolutionX = w;
     let cloudsResolutionY = h;
 
-    uniforms.get('viewportSizeInverse').value = new Vector2(1 / cloudsResolutionX, 1 / cloudsResolutionY);
+    // update uniform "viewportSizeInverse"
+    _viewportSizeInverse.set(1 / cloudsResolutionX, 1 / cloudsResolutionY);
 
     // this.renderTarget.depthTexture = new DepthTexture(w, h); // хз?
 

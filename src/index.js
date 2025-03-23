@@ -130,7 +130,13 @@ class CloudsDemo {
 
     this.cloudsEffect = new CloudsEffect(
       this.scene, this.camera, this.clock, {
-        noiseTexture
+        noiseTexture,
+        undersampling: this.undersampling,
+        geometryMultisampling: this.geometryMultisampling,
+
+        // TODO: в юниформы?
+        detailsWindSpeed: this.detailsWindSpeed,
+        detailsWindChangeSpeed: this.detailsWindChangeSpeed,
       }
     );
 

@@ -1,4 +1,4 @@
-import { BlendFunction, Effect, EffectAttribute, Resolution } from 'postprocessing';
+import { BlendFunction, Effect, EffectAttribute, Resolution, ShaderPass } from 'postprocessing';
 import fragmentShader from './ab-post.frag.glsl?raw';
 import {
   Color,
@@ -10,8 +10,10 @@ import {
   Vector2,
   Vector3,
   Matrix4,
-  WebGLRenderTarget
+  WebGLRenderTarget, ShaderMaterial
 } from 'three';
+import abPostVS from './ab-post.vertex.glsl?raw';
+import abMergeFS from './ab-merge.frag.glsl?raw';
 
 const _worldCameraPosition = new Vector3();
 const _viewportSizeInverse = new Vector2(1, 1);
@@ -35,7 +37,9 @@ class CloudsEffect extends Effect {
   }
 
   set undersampling(value) {
+    this._undersampling = value;
 
+    // TODO: здесь нужно пересоздавать WebGLRenderTarget с нужным размером
   }
 
   _geometryMultisampling = 0;
@@ -129,6 +133,20 @@ class CloudsEffect extends Effect {
     this.detailsWindSpeed = detailsWindSpeed;
     this.detailsWindChangeSpeed = detailsWindChangeSpeed;
 
+    this.undersamplingPass = new ShaderPass(
+      new ShaderMaterial({
+        vertexShader: abPostVS,
+        fragmentShader: abMergeFS,
+        uniforms: {
+          sceneTexture: { value: null },
+          cloudsTexture: { value: null },
+          viewportSizeInverse: { value: _viewportSizeInverse },
+        }
+      }),
+      'sceneTexture'
+    );
+    this.undersamplingMaterial = this.undersamplingPass.fullscreenMaterial;
+
     this.renderTarget = new WebGLRenderTarget(1, 1, { samples: this.geometryMultisampling });
     this.renderTarget.texture.name = 'Clouds.Intermediate';
     this.renderTarget.depthTexture = new DepthTexture(); // TODO: в примерах либы у нее нигде не задается размер, это проблема?
@@ -141,7 +159,25 @@ class CloudsEffect extends Effect {
   }
 
   initialize(renderer, alpha, frameBufferType) {
+    this.undersamplingPass.initialize(renderer, alpha, frameBufferType);
+
     super.initialize(renderer, alpha, frameBufferType);
+
+    // if(frameBufferType !== undefined) {
+    //
+    //   this.renderTargetA.texture.type = frameBufferType;
+    //   this.renderTargetB.texture.type = frameBufferType;
+    //   this.renderTargetLight.texture.type = frameBufferType;
+    //
+    //   if(renderer !== null && renderer.outputColorSpace === SRGBColorSpace) {
+    //
+    //     this.renderTargetA.texture.colorSpace = SRGBColorSpace;
+    //     this.renderTargetB.texture.colorSpace = SRGBColorSpace;
+    //     this.renderTargetLight.texture.colorSpace = SRGBColorSpace;
+    //
+    //   }
+    //
+    // }
   }
 
   // deltaTime in seconds
@@ -165,9 +201,22 @@ class CloudsEffect extends Effect {
       Math.sin(time * this.detailsWindChangeSpeed)
     ).multiplyScalar(this.detailsWindSpeed);
 
-    super.update(renderer, inputBuffer, deltaTime);
+    if (this.undersampling > 0) {
+      // console.log(this.undersamplingMaterial.uniforms)
+      this.undersamplingMaterial.uniforms.sceneTexture = inputBuffer;
+      this.undersamplingMaterial.uniforms.cloudsTexture = this.renderTarget.texture;
+
+      // return;
+
+      this.undersamplingPass.render(renderer, inputBuffer, this.renderTarget, deltaTime);
+
+      // super.update(renderer, inputBuffer, deltaTime);
+    } else {
+      super.update(renderer, inputBuffer, deltaTime);
+    }
   }
 
+  // TODO: https://github.com/pmndrs/postprocessing/blob/0831d3dd66829a5a0c37e0bc1f359c486439f461/src/effects/DepthOfFieldEffect.js#L533
   setSize(width, height) {
     const uniforms = this.uniforms;
 
@@ -188,6 +237,9 @@ class CloudsEffect extends Effect {
     _viewportSizeInverse.set(1 / cloudsResolutionX, 1 / cloudsResolutionY);
 
     // this.renderTarget.depthTexture = new DepthTexture(w, h); // хз?
+
+    // тут меньше?
+    this.undersamplingPass.setSize(width, height);
 
     // this.blurPass.setSize(width, height);
     // this.renderTargetMask.setSize(width, height);

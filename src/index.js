@@ -42,7 +42,14 @@ import abPostFS from './ab-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
+import {
+  BloomEffect,
+  ChromaticAberrationEffect,
+  EffectComposer,
+  EffectPass, LensDistortionEffect,
+  NoiseEffect,
+  RenderPass
+} from 'postprocessing';
 import { CloudsEffect } from './clouds-effect';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
@@ -112,7 +119,7 @@ class CloudsDemo {
     this.renderer.toneMapping = NoToneMapping; // так и должно быть, в случае тон маппинга, нужно задавать его через ToneMappingEffect
     this.renderer.toneMappingExposure = 1;
 
-    this.camera = new PerspectiveCamera(60, 1, 0.1, 100000);
+    this.camera = new PerspectiveCamera(75, 1, 0.1, 100000);
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
     this.controls.settings.general.mode = ControlMode.FIRST_PERSON;
@@ -128,11 +135,15 @@ class CloudsDemo {
     );
 
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: HalfFloatType
+      // frameBufferType: HalfFloatType
     });
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new EffectPass(this.camera, this.cloudsEffect));
     // this.composer.addPass(new EffectPass(this.camera, new BloomEffect()));
+    // this.composer.addPass(new EffectPass(this.camera, new ChromaticAberrationEffect()));
+    // this.composer.addPass(new EffectPass(this.camera, new LensDistortionEffect({
+    //   distortion: new Vector2(1, 10),
+    // })));
 
     // this.camera.position.set(343, 371, -536);
     // this.camera.rotation.set(

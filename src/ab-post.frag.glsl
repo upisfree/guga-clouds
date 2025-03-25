@@ -58,11 +58,12 @@ uniform float sunCastDistance;
 float pn(vec3 x)
 {
   vec3 p = floor(x);
-  vec3 f = fract(x);
+  p = mix(p, ceil(x), pow(smoothstep(p, ceil(x), x), vec3(4.0)));
+  vec3 f = abs(2.0 * fract(x) - 1.0);
 	f = f*f*(3.0-2.0*f);
-	vec2 uv = (p.xy+vec2(37.0,17.0)*p.z) + f.xy;
+	vec2 uv = (p.xz+vec2(37.0,17.0)*p.y) + f.xz;
 	vec2 rg = textureLod( noiseTexture, (uv+ 0.5)/256.0, 0.0 ).yx;
-	return -1.0+2.4*mix( rg.x, rg.y, f.z );
+	return -1.0+2.4*mix( rg.x, rg.y, f.y );
 }
 
 float fpn(vec3 p) 

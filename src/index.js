@@ -302,7 +302,7 @@ class CloudsDemo {
     });
     cloudsDetailsFolder.addBinding(this.postMaterial.uniforms.detailsIntensity, "value", {
       label: "Intensity",
-      min: 1.0,
+      min: 0.1,
       max: 10.0,
     });
     cloudsDetailsFolder.addBinding(this, "detailsWindSpeed", {

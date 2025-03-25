@@ -63,10 +63,7 @@ class CloudsEffect extends Effect {
     super('CloudsEffect', fragmentShader, {
       blendFunction: BlendFunction.NORMAL,
 
-      // TODO: @AlexeyBond не понимаю что такое CONVOLUTION и нужен ли он, но на всякий случай добавил
-      // CONVOLUTION Describes effects that fetch additional samples from the input buffer. There cannot be more than one effect with this attribute per EffectPass.
-      // https://pmndrs.github.io/postprocessing/public/docs/variable/index.html#static-variable-EffectAttribute
-      attributes: EffectAttribute.CONVOLUTION | EffectAttribute.DEPTH,
+      attributes: EffectAttribute.DEPTH,
 
       defines: new Map([
         ['DEPTH_COORD_MULTIPLIER', '1'],

@@ -48,7 +48,10 @@ import {
   EffectComposer,
   EffectPass, LensDistortionEffect,
   NoiseEffect,
-  RenderPass
+  RenderPass,
+  SMAAEffect,
+  SMAAPreset,
+  ToneMappingEffect
 } from 'postprocessing';
 import { CloudsEffect } from './clouds-effect';
 
@@ -145,6 +148,13 @@ class CloudsDemo {
     });
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.composer.addPass(new EffectPass(this.camera, this.cloudsEffect));
+
+    this.smaaPreset = SMAAPreset.MEDIUM;
+    this.smaaEffect = new SMAAEffect({ preset: this.smaaPreset });
+    this.smaaPass = new EffectPass(this.camera, this.smaaEffect);
+    this.composer.addPass(this.smaaPass);
+
+    this.composer.addPass(new EffectPass(this.camera));
     // this.composer.addPass(new EffectPass(this.camera, new BloomEffect()));
     // this.composer.addPass(new EffectPass(this.camera, new ChromaticAberrationEffect()));
     // this.composer.addPass(new EffectPass(this.camera, new LensDistortionEffect({
@@ -326,6 +336,17 @@ class CloudsDemo {
       max: 16,
       step: 1.0
     }).on("change", () => this.initPost());
+    cloudsQualityFolder.addBinding(this, "smaaPreset", {
+      label: "SMAA preset",
+      options: { NONE: "NONE", ...SMAAPreset },
+    }).on("change", () => {
+      if (this.smaaPreset === "NONE") {
+        this.smaaPass.setEnabled(false);
+      } else {
+        this.smaaPass.setEnabled(true);
+        this.smaaEffect.applyPreset(this.smaaPreset);
+      }
+    });
 
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
     cloudsDetailsFolder.addBinding(this.cloudsEffect.uniforms.get('detailsScale'), "value", {

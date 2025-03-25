@@ -4,10 +4,7 @@
 // If MERGE_COLOR is defined, this shader will read a color value from pre-rendered frame texture and merge it with
 // clouds image, resulting in an opaque image.
 // Otherwise, the shader will render clouds only, saving accumulated clouds transparency in alpha channel of resulting image.
-#ifdef MERGE_COLOR
-uniform sampler2D tDiffuse;
-#endif
-uniform sampler2D tDepth;
+
 uniform vec2 viewportSizeInverse;
 uniform vec3 worldCameraPosition;
 uniform mat4 worldCameraUnprojectionMatrix;
@@ -48,9 +45,6 @@ uniform bool fogEnabled;
 
 uniform sampler2D noiseTexture;
 
-uniform float cameraNear;
-uniform float cameraFar;
-
 uniform vec3 sunDirection;
 uniform float sunCastDistance;
 
@@ -66,7 +60,7 @@ float pn(vec3 x)
 	return -1.0+2.4*mix( rg.x, rg.y, f.y );
 }
 
-float fpn(vec3 p) 
+float fpn(vec3 p)
 {
    return pn(p*.06125)*.5 + pn(p*.125)*.25 + pn(p*.25)*.125;
 }
@@ -86,7 +80,7 @@ float normalizer = 1.0 / sqrt(1.0 + nudge * nudge); // pythagorean theorem on th
 float SpiralNoiseC(vec3 p) {
   float n = 0.0;  // noise amount
   float iter = 1.0;
-    
+
   for (int i = 0; i < 8; i++) {
     // add sin and cos scaled inverse with the frequency
     n += -abs(sin(p.y * iter) + cos(p.x * iter)) / iter; // abs for a ridged look
@@ -94,7 +88,7 @@ float SpiralNoiseC(vec3 p) {
     // rotate by adding perpendicular and scaling down
     p.xy += vec2(p.y, -p.x) * nudge;
     p.xy *= normalizer;
-      
+
     // rotate on other axis
     p.xz += vec2(p.z, -p.x) * nudge;
     p.xz *= normalizer;
@@ -102,25 +96,25 @@ float SpiralNoiseC(vec3 p) {
     // increase the frequency
     iter *= 1.733733;
   }
-  
+
   return n;
 }
 
 float SpiralNoise3D(vec3 p) {
   float n = 0.0;
   float iter = 1.0;
-    
+
   for (int i = 0; i < 5; i++) {
     n += (sin(p.y * iter) + cos(p.x * iter)) / iter;
-    
+
     //p.xy += vec2(p.y, -p.x) * nudge;
     //p.xy *= normalizer;
     p.xz += vec2(p.z, -p.x) * nudge;
     p.xz *= normalizer;
-    
+
     iter *= 1.33733;
   }
-  
+
   return n;
 }
 
@@ -161,19 +155,19 @@ float linearize_depth(float depth){
   return a + b / depth;
 }
 
-void main() {
+void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth, out vec4 outputColor) {
     // Integer screenspace coordinates for texelFetch calls
     ivec2 texelCoords = ivec2(gl_FragCoord.xy);
 
 #ifdef MERGE_COLOR
     // Pixel of previously rendered scene
-    vec3 color = texelFetch(tDiffuse, texelCoords, 0).rgb;
+    vec3 color = inputColor.rgb;
 #else
     vec3 color = vec3(0.0);
 #endif
 
     // Value from depth buffer
-    float depthTexel = texelFetch(tDepth, texelCoords * DEPTH_COORD_MULTIPLIER, 0).r;
+    float depthTexel = texelFetch(depthBuffer, texelCoords * DEPTH_COORD_MULTIPLIER, 0).r;
     //// Alternative if texelFetch won't work everywhere
     //float depthTexel = texture2D(tDepth, gl_FragCoord.xy * viewportSizeInverse).r;
 
@@ -280,12 +274,10 @@ void main() {
     transparency = max(0.0, (transparency - transparencyThreshold) / (1.0 - transparencyThreshold));
 
 #ifdef MERGE_COLOR
-    gl_FragColor.rgb = mix(color_acc, color, transparency);
-    gl_FragColor.a = 1.0;
-    // https://discourse.threejs.org/t/different-color-output-when-rendering-to-webglrendertarget/57494/2
-    gl_FragColor = sRGBTransferOETF(gl_FragColor);
+    outputColor.rgb = mix(color_acc, color, transparency);
+    outputColor.a = 1.0;
 #else
-    gl_FragColor.rgb = color_acc;
-    gl_FragColor.a = 1.0 - transparency;
+    outputColor.rgb = color_acc;
+    outputColor.a = 1.0 - transparency;
 #endif
 }

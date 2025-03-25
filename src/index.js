@@ -30,7 +30,7 @@ import {
   TextureLoader,
   LinearFilter,
   RepeatWrapping, NearestFilter, MeshBasicMaterial,
-  NoToneMapping
+  NoToneMapping, SRGBColorSpace, HalfFloatType
 } from 'three';
 import { GLTFLoader } from 'three/addons';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
@@ -42,6 +42,15 @@ import abPostFS from './ab-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import {
+  BloomEffect,
+  ChromaticAberrationEffect,
+  EffectComposer,
+  EffectPass, LensDistortionEffect,
+  NoiseEffect,
+  RenderPass
+} from 'postprocessing';
+import { CloudsEffect } from './clouds-effect';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -59,6 +68,8 @@ class CloudsDemo {
     this.detailsWindChangeSpeed = 0.05;
 
     this.geometryMultisampling = 8;
+
+    this.clock = new Clock(true);
 
     this.init3D();
     this.initPost()
@@ -80,8 +91,6 @@ class CloudsDemo {
     //   this.scene.add(this.cloudsShadertoy);
     // }
 
-    this.clock = new Clock(true);
-
     this.update();
   }
 
@@ -89,10 +98,13 @@ class CloudsDemo {
     // 3D setup
     this.renderer = new WebGLRenderer({
       powerPreference: 'high-performance',
-      antialias: true,
+      antialias: false,
+      stencil: false,
+      depth: false,
       alpha: false,
       logarithmicDepthBuffer: true,
     });
+    this.renderer.outputColorSpace = SRGBColorSpace;
     this.container.appendChild(this.renderer.domElement);
 
     this.stats = new Stats();
@@ -104,12 +116,10 @@ class CloudsDemo {
     this.scene.background = new Color(0xa4cbf4);
     // this.scene.fog = new Fog(0xb5d9f8, 150, 310);
 
-    this.renderer.toneMapping = NoToneMapping;
-    this.renderer.toneMappingExposure = 2.2;
+    this.renderer.toneMapping = NoToneMapping; // так и должно быть, в случае тон маппинга, нужно задавать его через ToneMappingEffect
+    this.renderer.toneMappingExposure = 1;
 
-    this.clock = new Clock();
-
-    this.camera = new PerspectiveCamera(60, 1, 0.1, 100000);
+    this.camera = new PerspectiveCamera(75, 1, 0.1, 100000);
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
     this.controls.settings.general.mode = ControlMode.FIRST_PERSON;
@@ -117,6 +127,29 @@ class CloudsDemo {
     this.controls.settings.translation.sensitivity = 100;
     this.controls.settings.translation.boostMultiplier = 10;
     this.controls.settings.rotation.sensitivity = 2.5;
+
+    this.cloudsEffect = new CloudsEffect(
+      this.scene, this.camera, this.clock, {
+        noiseTexture,
+        undersampling: this.undersampling,
+        geometryMultisampling: this.geometryMultisampling,
+
+        // TODO: в юниформы?
+        detailsWindSpeed: this.detailsWindSpeed,
+        detailsWindChangeSpeed: this.detailsWindChangeSpeed,
+      }
+    );
+
+    this.composer = new EffectComposer(this.renderer, {
+      // frameBufferType: HalfFloatType
+    });
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.composer.addPass(new EffectPass(this.camera, this.cloudsEffect));
+    // this.composer.addPass(new EffectPass(this.camera, new BloomEffect()));
+    // this.composer.addPass(new EffectPass(this.camera, new ChromaticAberrationEffect()));
+    // this.composer.addPass(new EffectPass(this.camera, new LensDistortionEffect({
+    //   distortion: new Vector2(1, 10),
+    // })));
 
     // this.camera.position.set(343, 371, -536);
     // this.camera.rotation.set(
@@ -157,126 +190,126 @@ class CloudsDemo {
     const cloudsFolder = this.pane.addFolder({ title: "Clouds" });
 
     const cloudsShapeFolder = cloudsFolder.addFolder({ title: "Shape", expanded: false });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsScale, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsScale'), "value", {
       label: "Scale",
       min: 1.0,
       max: 200.0,
       // step: 0.5,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsAltitude, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsAltitude'), "value", {
       label: "Altitude",
       min: -1000,
       max: 1000,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsAltitudeShift, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsAltitudeShift'), "value", {
       label: "Alt. shift",
       min: -500,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsFloorAltitude, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsFloorAltitude'), "value", {
       label: "Alt. floor",
       min: 0,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsCeilAltitude, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsCeilAltitude'), "value", {
       label: "Alt. ceiling",
       min: 0,
       max: 1000,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsCeilSmoothingRange, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsCeilSmoothingRange'), "value", {
       label: "Ceil smooth",
       min: 0,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsFloorSmoothingRange, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsFloorSmoothingRange'), "value", {
       label: "Floor smooth",
       min: 0,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.postMaterial.uniforms.cloudsTransitionalLayerScale, "value", {
+    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsTransitionalLayerScale'), "value", {
       label: "Tr. layer",
       min: 0.1,
       max: 2.5,
     });
 
     const cloudsColorFolder = cloudsFolder.addFolder({ title: "Coloring" });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityThreshold, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('densityThreshold'), "value", {
       label: "Density thres.",
       min: 0.0,
       max: 10.0,
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.transparencyThreshold, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('transparencyThreshold'), "value", {
       label: "α thres.",
       min: 0.00001,
       max: 0.5,
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.color1, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('color1'), "value", {
       label: "Color 1",
       color: { type: 'float' },
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.color2, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('color2'), "value", {
       label: "Color 2",
       color: { type: 'float' },
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityColorGradientLength, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('densityColorGradientLength'), "value", {
       label: "Color gradient depth",
       min: 0.5,
       max: 150.0,
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.alpha1, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('alpha1'), "value", {
       label: "α 1",
       min: 0.9,
       max: 0.999,
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.alpha2, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('alpha2'), "value", {
       label: "α 2",
       min: 0.9,
       max: 0.999,
     });
-    cloudsColorFolder.addBinding(this.postMaterial.uniforms.densityAlphaGradientLength, "value", {
+    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('densityAlphaGradientLength'), "value", {
       label: "α gradient depth",
       min: 0.5,
       max: 150.0,
     });
-    // cloudsColorFolder.addBinding(this.postMaterial.uniforms.color4, "value", {
+    // cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('color4'), "value", {
     //   label: "Color 4",
     //   color: { type: 'float' },
     // });
 
     const cloudsSunFolder = cloudsColorFolder.addFolder({ title: "Sun" });
-    cloudsSunFolder.addBinding(this.postMaterial.uniforms.color3, "value", {
+    cloudsSunFolder.addBinding(this.cloudsEffect.uniforms.get('color3'), "value", {
       label: "Color 3",
       color: { type: 'float' },
     });
-    cloudsSunFolder.addBinding(this.postMaterial.uniforms.sunDirection, "value", {
+    cloudsSunFolder.addBinding(this.cloudsEffect.uniforms.get('sunDirection'), "value", {
       label: "Sun direction",
     }).on("change", () => {
-      this.postMaterial.uniforms.sunDirection.value.normalize();
+      this.cloudsEffect.uniforms.get('sunDirection').value.normalize();
       setTimeout(() => cloudsColorFolder.refresh(), 0);
     });
-    cloudsSunFolder.addBinding(this.postMaterial.uniforms.sunCastDistance, "value", {
+    cloudsSunFolder.addBinding(this.cloudsEffect.uniforms.get('sunCastDistance'), "value", {
       label: "Sun cast distance",
       min: 10,
       max: 100,
     });
 
     const cloudsQualityFolder = cloudsFolder.addFolder({ title: "Quality" });
-    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.maxRMDistance, "value", {
+    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('maxRMDistance'), "value", {
       label: "Max distance",
       min: 10000.0,
       max: this.camera.far,
     });
-    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.minRMStep, "value", {
+    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('minRMStep'), "value", {
       label: "Min step",
       min: 0.04,
       max: 20.0,
     });
-    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.rmStepScale, "value", {
+    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('rmStepScale'), "value", {
       label: "Step size",
       min: 0.2,
       max: 4.0,
     });
-    cloudsQualityFolder.addBinding(this.postMaterial.uniforms.ditherDepth, "value", {
+    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('ditherDepth'), "value", {
       label: "Dithering depth",
       min: 0.0,
       max: 1.0,
@@ -295,12 +328,12 @@ class CloudsDemo {
     }).on("change", () => this.initPost());
 
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
-    cloudsDetailsFolder.addBinding(this.postMaterial.uniforms.detailsScale, "value", {
+    cloudsDetailsFolder.addBinding(this.cloudsEffect.uniforms.get('detailsScale'), "value", {
       label: "Scale",
       min: 10.0,
       max: 70.0,
     });
-    cloudsDetailsFolder.addBinding(this.postMaterial.uniforms.detailsIntensity, "value", {
+    cloudsDetailsFolder.addBinding(this.cloudsEffect.uniforms.get('detailsIntensity'), "value", {
       label: "Intensity",
       min: 0.1,
       max: 10.0,
@@ -318,14 +351,14 @@ class CloudsDemo {
 
     const fogFolder = this.pane.addFolder({ title: "Fog", expanded: false });
 
-    fogFolder.addBinding(this.postMaterial.uniforms.fogEnabled, "value", {
+    fogFolder.addBinding(this.cloudsEffect.uniforms.get('fogEnabled'), "value", {
       label: "Enabled",
     });
-    fogFolder.addBinding(this.postMaterial.uniforms.fogColor, "value", {
+    fogFolder.addBinding(this.cloudsEffect.uniforms.get('fogColor'), "value", {
       label: "Color",
       color: { type: "float" },
     });
-    fogFolder.addBinding(this.postMaterial.uniforms.fogTransparency, "value", {
+    fogFolder.addBinding(this.cloudsEffect.uniforms.get('fogTransparency'), "value", {
       label: "Transparency",
       min: 0.99,
       max: 0.9999,
@@ -498,14 +531,15 @@ class CloudsDemo {
 
     this.controls.update(timestamp);
 
-    // this.cloudsUpisfree.update();
-    // this.cloudsShadertoy.update();
-
     this.render();
     this.stats.update();
   }
 
   render() {
+    this.composer.render();
+
+    return;
+
     if (this.skipPostProcessing) {
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.scene, this.camera);
@@ -549,9 +583,11 @@ class CloudsDemo {
     this.camera.updateProjectionMatrix();
 
     let pixelRatio = window.devicePixelRatio;
+
+    // composer.setSize() учитывает pixel ratio WebGLRenderer
     this.renderer.setPixelRatio(pixelRatio);
 
-    this.renderer.setSize(this.containerBounds.width, this.containerBounds.height);
+    this.composer.setSize(this.containerBounds.width, this.containerBounds.height);
   }
 
   initObjects() {

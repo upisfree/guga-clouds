@@ -192,12 +192,9 @@ void main() {
     // Direction from camera thru this pixel
     highp vec3 dir = p.xyz - worldCameraPosition;
 
-    // Distance from camera to the point thhis pixel represents (all in world space)
-    highp float l = length(dir);
-    dir /= l;
-
-    // Cloud transparency/opacity accumulator
-    float transparency = 1.0;
+    // Distance from camera to the point this pixel represents (all in world space)
+    highp float max_dist_geometry = length(dir);
+    dir /= max_dist_geometry;
 
     // Current step position in world space
     highp vec3 pos = worldCameraPosition;
@@ -207,21 +204,34 @@ void main() {
 
     // Max. distance from camera in world units
     float max_dist = maxRMDistance;
-    max_dist = min(max_dist, l);
+    max_dist = min(max_dist, max_dist_geometry);
 
     if (abs(dir.y) > 0.0) {
       vec2 limit_distances = (vec2(cloudsAltitude - pos.y) + vec2(-cloudsFloorAltitude, cloudsCeilAltitude)) / dir.y;
-      max_dist = min(max_dist, max(limit_distances.x, limit_distances.y));
+      // Max. distance from camera in world units, as defined by cloud layer's limiting planes
+      float max_dist_limit = max(limit_distances.x, limit_distances.y);
+      max_dist = min(max_dist, max_dist_limit);
       dist = max(0.0, min(limit_distances.x, limit_distances.y));
     }
 
     dist += 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
     pos += dist * dir;
 
-    float prev_transparency = 1.0, prev_dist = dist;
+    // Cloud transparency accumulator, transparency of previous step, distance at start of previous step
+    float transparency = 1.0, prev_transparency = 1.0, prev_dist = dist;
     vec3 color_acc = vec3(0.0);
 
-    while (true) {
+#define ACCUMULATE_COLOR(_color, _local_transparency) \
+    { vec3 color = _color; float local_transparency = _local_transparency; \
+      color_acc += color * (transparency - transparency * local_transparency); \
+      transparency *= local_transparency; }
+
+    if (fogEnabled) {
+      // Compute fog in space before clouds layer
+      ACCUMULATE_COLOR(fogColor, pow(fogTransparency, dist / 10.0));
+    }
+
+    while (dist < max_dist) {
         float d = get_cloud_distance(pos);
 
         if (d < densityThreshold) {
@@ -232,8 +242,8 @@ void main() {
           vec3 local_color = mix(color1, color2 + color3 * k_sun, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
 
           float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
-          color_acc += local_color * (transparency - transparency * step_transparency);
-          transparency *= step_transparency;
+
+          ACCUMULATE_COLOR(local_color, step_transparency);
 
           if (transparency < transparencyThreshold) {
             break;
@@ -247,12 +257,7 @@ void main() {
         if (fogEnabled) {
           float fog_dst = min(dist, max_dist) - prev_dist;
           float fog_step_transparency = pow(fogTransparency, fog_dst / 10.0);
-          color_acc += fogColor * (transparency * (1.0 - fog_step_transparency));
-          transparency *= fog_step_transparency;
-        }
-
-        if (dist > max_dist) {
-          break;
+          ACCUMULATE_COLOR(fogColor, fog_step_transparency);
         }
 
         d *= rmStepScale;
@@ -262,6 +267,12 @@ void main() {
         prev_dist = dist;
         dist += d;
         pos += dir * d;
+    }
+
+    if (fogEnabled) {
+      // Compute fog in the space behind clouds layer
+      float remaining_dist = max(0.0, max_dist_geometry - dist);
+      ACCUMULATE_COLOR(fogColor, pow(fogTransparency, remaining_dist / 10.0));
     }
 
     color_acc /= max(1.0 - transparency, 0.0001); // max() to prevent division by zero on non-cloudy pixels

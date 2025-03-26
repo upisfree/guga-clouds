@@ -137,7 +137,6 @@ class CloudsDemo {
         undersampling: this.undersampling,
         geometryMultisampling: this.geometryMultisampling,
 
-        // TODO: в юниформы?
         detailsWindSpeed: this.detailsWindSpeed,
         detailsWindChangeSpeed: this.detailsWindChangeSpeed,
       }

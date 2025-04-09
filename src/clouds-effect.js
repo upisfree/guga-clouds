@@ -1,5 +1,5 @@
 import { BlendFunction, Effect, EffectAttribute, Resolution, ShaderPass } from 'postprocessing';
-import fragmentShader from './ab-post.frag.glsl?raw';
+import fragmentShader from './clouds/clouds-post.frag.glsl?raw';
 import {
   Color,
   DepthTexture, Mesh,

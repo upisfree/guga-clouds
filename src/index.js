@@ -38,7 +38,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
 import abPostVS from './ab-post.vertex.glsl?raw';
-import abPostFS from './ab-post.frag.glsl?raw';
+import abPostFS from './clouds/clouds-post.frag.glsl?raw';
 import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
@@ -53,7 +53,9 @@ import {
   SMAAPreset,
   ToneMappingEffect
 } from 'postprocessing';
-import { CloudsEffect } from './clouds-effect';
+import { makeUniformsProxy } from './clouds/uniforms-proxy';
+import { Wind } from './clouds/wind';
+import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -67,8 +69,6 @@ class CloudsDemo {
     this.container = container;
 
     this.undersampling = 2;
-    this.detailsWindSpeed = 200.0;
-    this.detailsWindChangeSpeed = 0.05;
 
     this.geometryMultisampling = 8;
 
@@ -131,16 +131,11 @@ class CloudsDemo {
     this.controls.settings.translation.boostMultiplier = 10;
     this.controls.settings.rotation.sensitivity = 2.5;
 
-    this.cloudsEffect = new CloudsEffect(
-      this.scene, this.camera, this.clock, {
-        noiseTexture,
-        undersampling: this.undersampling,
-        geometryMultisampling: this.geometryMultisampling,
-
-        detailsWindSpeed: this.detailsWindSpeed,
-        detailsWindChangeSpeed: this.detailsWindChangeSpeed,
-      }
-    );
+    this.cloudsEffect = new DirectCloudsEffect({
+      camera: this.camera,
+      clock: this.clock,
+      noiseTexture,
+    });
 
     this.composer = new EffectComposer(this.renderer, {
       // frameBufferType: HalfFloatType
@@ -166,6 +161,9 @@ class CloudsDemo {
     //   0.42,
     //   2.83,
     // );
+
+    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms]);
+    this.wind = new Wind(this.uniformProxy, this.clock);
     this.camera.position.set(0, 50, 100);
     this.camera.rotation.set(
       0, 0, 0
@@ -199,126 +197,126 @@ class CloudsDemo {
     const cloudsFolder = this.pane.addFolder({ title: "Clouds" });
 
     const cloudsShapeFolder = cloudsFolder.addFolder({ title: "Shape", expanded: false });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsScale'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsScale", {
       label: "Scale",
       min: 1.0,
       max: 200.0,
       // step: 0.5,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsAltitude'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsAltitude", {
       label: "Altitude",
       min: -1000,
       max: 1000,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsAltitudeShift'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsAltitudeShift", {
       label: "Alt. shift",
       min: -500,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsFloorAltitude'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsFloorAltitude", {
       label: "Alt. floor",
       min: 0,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsCeilAltitude'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsCeilAltitude", {
       label: "Alt. ceiling",
       min: 0,
       max: 1000,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsCeilSmoothingRange'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsCeilSmoothingRange", {
       label: "Ceil smooth",
       min: 0,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsFloorSmoothingRange'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsFloorSmoothingRange", {
       label: "Floor smooth",
       min: 0,
       max: 500,
     });
-    cloudsShapeFolder.addBinding(this.cloudsEffect.uniforms.get('cloudsTransitionalLayerScale'), "value", {
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsTransitionalLayerScale", {
       label: "Tr. layer",
       min: 0.1,
       max: 2.5,
     });
 
     const cloudsColorFolder = cloudsFolder.addFolder({ title: "Coloring" });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('densityThreshold'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "densityThreshold", {
       label: "Density thres.",
       min: 0.0,
       max: 10.0,
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('transparencyThreshold'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "transparencyThreshold", {
       label: "α thres.",
       min: 0.00001,
       max: 0.5,
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('color1'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "color1", {
       label: "Color 1",
       color: { type: 'float' },
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('color2'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "color2", {
       label: "Color 2",
       color: { type: 'float' },
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('densityColorGradientLength'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "densityColorGradientLength", {
       label: "Color gradient depth",
       min: 0.5,
       max: 150.0,
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('alpha1'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "alpha1", {
       label: "α 1",
       min: 0.9,
       max: 0.999,
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('alpha2'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "alpha2", {
       label: "α 2",
       min: 0.9,
       max: 0.999,
     });
-    cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('densityAlphaGradientLength'), "value", {
+    cloudsColorFolder.addBinding(this.uniformProxy, "densityAlphaGradientLength", {
       label: "α gradient depth",
       min: 0.5,
       max: 150.0,
     });
-    // cloudsColorFolder.addBinding(this.cloudsEffect.uniforms.get('color4'), "value", {
+    // cloudsColorFolder.addBinding(this.uniformProxy, "color4", {
     //   label: "Color 4",
     //   color: { type: 'float' },
     // });
 
     const cloudsSunFolder = cloudsColorFolder.addFolder({ title: "Sun" });
-    cloudsSunFolder.addBinding(this.cloudsEffect.uniforms.get('color3'), "value", {
+    cloudsSunFolder.addBinding(this.uniformProxy, "color3", {
       label: "Color 3",
       color: { type: 'float' },
     });
-    cloudsSunFolder.addBinding(this.cloudsEffect.uniforms.get('sunDirection'), "value", {
+    cloudsSunFolder.addBinding(this.uniformProxy, "sunDirection", {
       label: "Sun direction",
     }).on("change", () => {
       this.cloudsEffect.uniforms.get('sunDirection').value.normalize();
       setTimeout(() => cloudsColorFolder.refresh(), 0);
     });
-    cloudsSunFolder.addBinding(this.cloudsEffect.uniforms.get('sunCastDistance'), "value", {
+    cloudsSunFolder.addBinding(this.uniformProxy, "sunCastDistance", {
       label: "Sun cast distance",
       min: 10,
       max: 100,
     });
 
     const cloudsQualityFolder = cloudsFolder.addFolder({ title: "Quality" });
-    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('maxRMDistance'), "value", {
+    cloudsQualityFolder.addBinding(this.uniformProxy, "maxRMDistance", {
       label: "Max distance",
       min: 10000.0,
       max: this.camera.far,
     });
-    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('minRMStep'), "value", {
+    cloudsQualityFolder.addBinding(this.uniformProxy, "minRMStep", {
       label: "Min step",
       min: 0.04,
       max: 20.0,
     });
-    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('rmStepScale'), "value", {
+    cloudsQualityFolder.addBinding(this.uniformProxy, "rmStepScale", {
       label: "Step size",
       min: 0.2,
       max: 4.0,
     });
-    cloudsQualityFolder.addBinding(this.cloudsEffect.uniforms.get('ditherDepth'), "value", {
+    cloudsQualityFolder.addBinding(this.uniformProxy, "ditherDepth", {
       label: "Dithering depth",
       min: 0.0,
       max: 1.0,
@@ -329,12 +327,12 @@ class CloudsDemo {
       max: 4,
       step: 1,
     }).on("change", () => this.initPost());
-    cloudsQualityFolder.addBinding(this, "geometryMultisampling", {
-      label: "Geometry MS",
-      min: 0,
-      max: 16,
-      step: 1.0
-    }).on("change", () => this.initPost());
+    // cloudsQualityFolder.addBinding(this, "geometryMultisampling", {
+    //   label: "Geometry MS",
+    //   min: 0,
+    //   max: 16,
+    //   step: 1.0
+    // }).on("change", () => this.initPost());
     cloudsQualityFolder.addBinding(this, "smaaPreset", {
       label: "SMAA preset",
       options: { NONE: "NONE", ...SMAAPreset },
@@ -348,22 +346,22 @@ class CloudsDemo {
     });
 
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
-    cloudsDetailsFolder.addBinding(this.cloudsEffect.uniforms.get('detailsScale'), "value", {
+    cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsScale", {
       label: "Scale",
       min: 10.0,
       max: 70.0,
     });
-    cloudsDetailsFolder.addBinding(this.cloudsEffect.uniforms.get('detailsIntensity'), "value", {
+    cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsIntensity", {
       label: "Intensity",
       min: 1.0,
       max: 10.0,
     });
-    cloudsDetailsFolder.addBinding(this, "detailsWindSpeed", {
+    cloudsDetailsFolder.addBinding(this.wind, "detailsWindSpeed", {
       label: "Wind speed",
       min: 100,
       max: 5000,
     });
-    cloudsDetailsFolder.addBinding(this, "detailsWindChangeSpeed", {
+    cloudsDetailsFolder.addBinding(this.wind, "detailsWindChangeSpeed", {
       label: "Wind change speed",
       min: 0.05,
       max: 1.0,
@@ -371,14 +369,14 @@ class CloudsDemo {
 
     const fogFolder = this.pane.addFolder({ title: "Fog", expanded: false });
 
-    fogFolder.addBinding(this.cloudsEffect.uniforms.get('fogEnabled'), "value", {
+    fogFolder.addBinding(this.uniformProxy, "fogEnabled", {
       label: "Enabled",
     });
-    fogFolder.addBinding(this.cloudsEffect.uniforms.get('fogColor'), "value", {
+    fogFolder.addBinding(this.uniformProxy, "fogColor", {
       label: "Color",
       color: { type: "float" },
     });
-    fogFolder.addBinding(this.cloudsEffect.uniforms.get('fogTransparency'), "value", {
+    fogFolder.addBinding(this.uniformProxy, "fogTransparency", {
       label: "Transparency",
       min: 0.99,
       max: 0.9999,
@@ -550,6 +548,7 @@ class CloudsDemo {
     requestAnimationFrame(this.update.bind(this));
 
     this.controls.update(timestamp);
+    this.wind.update();
 
     this.render();
     this.stats.update();

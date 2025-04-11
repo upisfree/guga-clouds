@@ -56,6 +56,7 @@ import {
 import { makeUniformsProxy } from './clouds/uniforms-proxy';
 import { Wind } from './clouds/wind';
 import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
+import { UndersampledCloudsPass } from './clouds/undersampled-clouds-effect';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -140,8 +141,20 @@ class CloudsDemo {
     this.composer = new EffectComposer(this.renderer, {
       // frameBufferType: HalfFloatType
     });
+    // this.composer.autoRenderToScreen = false;
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.composer.addPass(new EffectPass(this.camera, this.cloudsEffect));
+
+    this._directCloudsPass = new EffectPass(this.camera, this.cloudsEffect);
+    this._undersampledCloudsPass = new UndersampledCloudsPass({
+      camera: this.camera,
+      clock: this.clock,
+      noiseTexture,
+      undersampling: 16,
+      renderer: this.renderer,
+    });
+    this.composer.addPass(this._directCloudsPass);
+    this.composer.addPass(this._undersampledCloudsPass);
+    this.updateUndersampling();
 
     this.smaaPreset = SMAAPreset.MEDIUM;
     this.smaaEffect = new SMAAEffect({ preset: this.smaaPreset });
@@ -191,6 +204,19 @@ class CloudsDemo {
     this.gridHelper.visible = false;
 
     this.initLights();
+  }
+
+  updateUndersampling() {
+    const us = Math.round(this.undersampling);
+
+    if (us > 0) {
+      this._undersampledCloudsPass.enabled = true;
+      this._directCloudsPass.enabled = false;
+      this._undersampledCloudsPass.undersampling = us;
+    } else {
+      this._undersampledCloudsPass.enabled = false;
+      this._directCloudsPass.enabled = true;
+    }
   }
 
   initPane() {
@@ -324,9 +350,9 @@ class CloudsDemo {
     cloudsQualityFolder.addBinding(this, "undersampling", {
       label: "Undersampling",
       min: 0,
-      max: 4,
+      max: 16,
       step: 1,
-    }).on("change", () => this.initPost());
+    }).on("change", () => this.updateUndersampling());
     // cloudsQualityFolder.addBinding(this, "geometryMultisampling", {
     //   label: "Geometry MS",
     //   min: 0,
@@ -384,7 +410,7 @@ class CloudsDemo {
 
     const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });
     helpersFolder.addBinding(this.gridHelper, "visible", { label: "Show grid" });
-    helpersFolder.addBinding(this, "showStats", { label: "Show stats"}).on("change", e => e.value ? this.container.appendChild(this.stats.dom) : this.stats.dom.remove());
+    helpersFolder.addBinding(this, "showStats", { label: "Show stats" }).on("change", e => e.value ? this.container.appendChild(this.stats.dom) : this.stats.dom.remove());
     helpersFolder.addBinding(this.scene, "background", {
       label: "Background",
       color: { type: 'float' },

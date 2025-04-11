@@ -1,6 +1,10 @@
 import { Uniform, Vector2, Vector3, Matrix4, Color } from "three";
 
-export function makeCloudsShaderUniforms({ noiseTexture }) {
+/**
+ * @param {{noiseTexture: import("three").Texture, extraUniforms: Map<string, import("three").Uniform>}} param0 
+ * @returns {Map<string, import("three").Uniform>}
+ */
+export function makeCloudsShaderUniforms({ noiseTexture, extraUniforms = new Map() }) {
     return new Map([
         ['worldCameraPosition', new Uniform(new Vector3())], // TODO: можно забирать напрямую с камеры
         ['viewportSizeInverse', new Uniform(new Vector2(1, 1))],
@@ -47,5 +51,6 @@ export function makeCloudsShaderUniforms({ noiseTexture }) {
 
         ['sunDirection', new Uniform(new Vector3(1, 1, 1).normalize())],
         ['sunCastDistance', new Uniform(20.0)],
+        ...extraUniforms.entries(),
     ]);
 }

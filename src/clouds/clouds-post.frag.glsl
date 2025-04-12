@@ -28,10 +28,9 @@ uniform float cloudsCeilAltitude;
 uniform float cloudsFloorSmoothingRange;
 uniform float cloudsCeilSmoothingRange;
 uniform float cloudsTransitionalLayerScale;
-uniform vec3 color1;
-uniform vec3 color2;
-uniform vec3 color3;
-uniform vec3 color4;
+uniform vec3 colorLowDensity;
+uniform vec3 colorHighDensity;
+uniform vec3 colorSun;
 
 uniform float alpha1;
 uniform float alpha2;
@@ -233,7 +232,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
           float k_sun = clamp((d_sun - d), 0.0, 1.0);
 
           float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));
-          vec3 local_color = mix(color1, color2 + color3 * k_sun, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
+          vec3 local_color = mix(colorLowDensity, colorHighDensity + colorSun * k_sun, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
 
           float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
 

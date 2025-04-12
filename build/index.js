@@ -27300,7 +27300,7 @@ uniform float rmStepScale;
 uniform float cloudsAltitude;
 uniform float cloudsTransitionalLayerScale;
 uniform vec3 color1;
-uniform vec3 color2;
+uniform vec3 colorHighDensity;
 uniform vec3 color3;
 uniform vec3 color4;
 
@@ -27490,7 +27490,7 @@ void main() {
           float k_sun = clamp(d_sun - d, 0.0, 1.0);
 
           float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));
-          vec3 local_color = mix(color1, color2, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
+          vec3 local_color = mix(color1, colorHighDensity, smoothstep(densityThreshold, densityThreshold - densityColorGradientLength, d));
 
           // local_color = mix(local_color, color3 * k_sun, 0.5);
 
@@ -27656,7 +27656,7 @@ class Pw {
     }), n.addBinding(this.postMaterial.uniforms.color1, "value", {
       label: "Color 1",
       color: { type: "float" }
-    }), n.addBinding(this.postMaterial.uniforms.color2, "value", {
+    }), n.addBinding(this.postMaterial.uniforms.colorHighDensity, "value", {
       label: "Color 2",
       color: { type: "float" }
     }), n.addBinding(this.postMaterial.uniforms.densityColorGradientLength, "value", {
@@ -27783,7 +27783,7 @@ class Pw {
         detailsOffset: { value: new T(0, 0, 0) },
         color1: { value: new we().setRGB(0.874509804, 0.874509804, 0.796078431) },
         // #dfdfcb
-        color2: { value: new we().setRGB(1, 1, 0.870588235) },
+        colorHighDensity: { value: new we().setRGB(1, 1, 0.870588235) },
         // #ffffde
         color3: { value: new we().setRGB(1, 0.95, 0.8) },
         color4: { value: new we() },

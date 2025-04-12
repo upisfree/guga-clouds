@@ -223,12 +223,12 @@ class CloudsDemo {
       min: 0.00001,
       max: 0.5,
     });
-    cloudsColorFolder.addBinding(this.uniformProxy, "color1", {
-      label: "Color 1",
+    cloudsColorFolder.addBinding(this.uniformProxy, "colorLowDensity", {
+      label: "Low density color",
       color: { type: 'float' },
     });
-    cloudsColorFolder.addBinding(this.uniformProxy, "color2", {
-      label: "Color 2",
+    cloudsColorFolder.addBinding(this.uniformProxy, "colorHighDensity", {
+      label: "High density color",
       color: { type: 'float' },
     });
     cloudsColorFolder.addBinding(this.uniformProxy, "densityColorGradientLength", {
@@ -253,8 +253,8 @@ class CloudsDemo {
     });
 
     const cloudsSunFolder = cloudsColorFolder.addFolder({ title: "Sun" });
-    cloudsSunFolder.addBinding(this.uniformProxy, "color3", {
-      label: "Color 3",
+    cloudsSunFolder.addBinding(this.uniformProxy, "colorSun", {
+      label: "Sun color",
       color: { type: 'float' },
     });
     cloudsSunFolder.addBinding(this.uniformProxy, "sunDirection", {

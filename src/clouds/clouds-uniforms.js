@@ -34,10 +34,9 @@ export function makeCloudsShaderUniforms({ noiseTexture, extraUniforms = new Map
 
         // TODO: проименовать цвета, чтобы они отражали их значение
         // TODO: вынести цвета отсюда повыше, когда настрою чистовые
-        ['color1', new Uniform(new Color().setRGB(0.874509804, 0.874509804, 0.796078431))], // #dfdfcb
-        ['color2', new Uniform(new Color().setRGB(1, 1, 0.870588235))], // #ffffde
-        ['color3', new Uniform(new Color().setRGB(0.19, 0.16, 0.00))],
-        ['color4', new Uniform(new Color())],
+        ['colorLowDensity', new Uniform(new Color().setRGB(0.874509804, 0.874509804, 0.796078431))], // #dfdfcb
+        ['colorHighDensity', new Uniform(new Color().setRGB(1, 1, 0.870588235))], // #ffffde
+        ['colorSun', new Uniform(new Color().setRGB(0.19, 0.16, 0.00))],
 
         ['alpha1', new Uniform(0.99)],
         ['alpha2', new Uniform(0.95)],

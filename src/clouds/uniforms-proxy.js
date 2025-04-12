@@ -6,7 +6,11 @@
 export function makeUniformsProxy(uniformMaps) {
     return new Proxy({}, {
         get(_, key) {
-            return uniformMaps[0].get(key)?.value;
+            const value = uniformMaps[0].get(key)?.value;
+
+            this.set(null, key, value);
+
+            return value;
         },
 
         set(_, key, value) {

@@ -17,7 +17,6 @@ class LowResolutionCloudsEffect extends BaseCloudsEffect {
             noiseTexture,
             uniforms: new Map([
                 ["depthInputOverrideTexture", new Uniform(noiseTexture)],
-                ["depthUVScale", new Uniform(undersampling)],
             ]),
             defines: new Map([
                 ["OVERRIDE_DEPTH_INPUT", "1"],
@@ -34,10 +33,6 @@ class LowResolutionCloudsEffect extends BaseCloudsEffect {
 
     set inputDepthTexture(tx) {
         this.uniforms.get("depthInputOverrideTexture").value = tx;
-    }
-
-    set depthUVScale(scale) {
-        this.uniforms.get("depthUVScale").value = scale;
     }
 }
 

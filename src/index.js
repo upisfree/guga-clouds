@@ -175,7 +175,7 @@ class CloudsDemo {
     //   2.83,
     // );
 
-    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms]);
+    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]);
     this.wind = new Wind(this.uniformProxy, this.clock);
     this.camera.position.set(0, 50, 100);
     this.camera.rotation.set(

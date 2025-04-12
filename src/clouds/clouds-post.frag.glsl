@@ -7,7 +7,6 @@
 
 #ifdef OVERRIDE_DEPTH_INPUT
 uniform sampler2D depthInputOverrideTexture;
-uniform int depthUVScale;
 #endif
 
 uniform vec2 viewportSizeInverse;
@@ -166,13 +165,13 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 
 #ifdef OVERRIDE_DEPTH_INPUT
   // Read depth from a custom buffer, if any
-  float depthSample = texelFetch(depthBuffer, texelCoords * depthUVScale, 0).r;
+  float depthSample = texture2D(depthInputOverrideTexture, uv).r;
 #else
   float depthSample = depth;
 #endif
 
 #ifdef USE_LOGDEPTHBUF
-  // depthSample = linearize_depth(depthSample);
+  depthSample = linearize_depth(depthSample);
 #endif
 
     vec2 frag_coord = gl_FragCoord.xy;
@@ -280,5 +279,4 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
     outputColor.rgb = color_acc;
     outputColor.a = 1.0 - transparency;
 #endif
-outputColor += vec4(0.0, float((texelCoords.x + texelCoords.y) % 2), 0.0, .5);
 }

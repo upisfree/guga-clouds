@@ -1,57 +1,29 @@
 import {
-  OrthographicCamera,
-  ShaderMaterial,
-  Vector3,
-  DepthTexture,
-  WebGLRenderTarget,
   AmbientLight,
-  BoxGeometry,
-  CircleGeometry,
   Clock,
   Color,
-  CylinderGeometry,
-  DoubleSide,
   GridHelper,
-  IcosahedronGeometry,
-  LatheGeometry,
-  Mesh,
-  MeshStandardMaterial,
-  OctahedronGeometry,
   PerspectiveCamera,
-  PlaneGeometry,
-  RingGeometry,
   Scene,
-  SphereGeometry,
-  TetrahedronGeometry,
-  TorusGeometry,
-  TorusKnotGeometry,
-  Vector2,
   WebGLRenderer,
   TextureLoader,
   LinearFilter,
   RepeatWrapping, NearestFilter, MeshBasicMaterial,
-  NoToneMapping, SRGBColorSpace, HalfFloatType
+  NoToneMapping, SRGBColorSpace
 } from 'three';
 import { GLTFLoader } from 'three/addons';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
-import abPostVS from './ab-post.vertex.glsl?raw';
-import abPostFS from './clouds/clouds-post.frag.glsl?raw';
-import abMergeFS from './ab-merge.frag.glsl?raw';
 import noiseTextureUrl from '../assets/noise.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import {
-  BloomEffect,
-  ChromaticAberrationEffect,
   EffectComposer,
-  EffectPass, LensDistortionEffect,
-  NoiseEffect,
+  EffectPass,
   RenderPass,
   SMAAEffect,
   SMAAPreset,
-  ToneMappingEffect
 } from 'postprocessing';
 import { makeUniformsProxy } from './clouds/uniforms-proxy';
 import { Wind } from './clouds/wind';
@@ -76,24 +48,11 @@ class CloudsDemo {
     this.clock = new Clock(true);
 
     this.init3D();
-    this.initPost()
-    // this.initObjects();
+
     this.initLevel();
 
     this.pane = new Pane();
     this.initPane();
-
-    // this.cloudsUpisfree = new CloudsUpisfree(this.camera, this.pane);
-
-    // if (location.search.includes('upisfree')) {
-    //   this.scene.add(this.cloudsUpisfree);
-    // }
-
-    // this.cloudsShadertoy = new CloudsShadertoy(this.camera, this.pane);
-
-    // if (location.search.includes('shadertoy')) {
-    //   this.scene.add(this.cloudsShadertoy);
-    // }
 
     this.update();
   }
@@ -162,18 +121,6 @@ class CloudsDemo {
     this.composer.addPass(this.smaaPass);
 
     this.composer.addPass(new EffectPass(this.camera));
-    // this.composer.addPass(new EffectPass(this.camera, new BloomEffect()));
-    // this.composer.addPass(new EffectPass(this.camera, new ChromaticAberrationEffect()));
-    // this.composer.addPass(new EffectPass(this.camera, new LensDistortionEffect({
-    //   distortion: new Vector2(1, 10),
-    // })));
-
-    // this.camera.position.set(343, 371, -536);
-    // this.camera.rotation.set(
-    //   -2.49,
-    //   0.42,
-    //   2.83,
-    // );
 
     this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]);
     this.wind = new Wind(this.uniformProxy, this.clock);
@@ -304,10 +251,6 @@ class CloudsDemo {
       min: 0.5,
       max: 150.0,
     });
-    // cloudsColorFolder.addBinding(this.uniformProxy, "color4", {
-    //   label: "Color 4",
-    //   color: { type: 'float' },
-    // });
 
     const cloudsSunFolder = cloudsColorFolder.addFolder({ title: "Sun" });
     cloudsSunFolder.addBinding(this.uniformProxy, "color3", {
@@ -353,12 +296,6 @@ class CloudsDemo {
       max: 16,
       step: 1,
     }).on("change", () => this.updateUndersampling());
-    // cloudsQualityFolder.addBinding(this, "geometryMultisampling", {
-    //   label: "Geometry MS",
-    //   min: 0,
-    //   max: 16,
-    //   step: 1.0
-    // }).on("change", () => this.initPost());
     cloudsQualityFolder.addBinding(this, "smaaPreset", {
       label: "SMAA preset",
       options: { NONE: "NONE", ...SMAAPreset },
@@ -416,107 +353,6 @@ class CloudsDemo {
       color: { type: 'float' },
     });
     helpersFolder.addBinding(this, "skipPostProcessing", { label: "Skip Post" });
-  }
-
-  initPost() {
-    const [resolutionX, resolutionY] = [this.renderer.getPixelRatio() * window.innerWidth, this.renderer.getPixelRatio() * window.innerHeight];
-    this.rt = new WebGLRenderTarget(resolutionX, resolutionY, { samples: this.geometryMultisampling });
-    this.rt.depthTexture = new DepthTexture(resolutionX, resolutionY);
-
-    let [cloudsResolutionX, cloudsResolutionY] = [resolutionX, resolutionY];
-
-    let cloudsShaderPrefix = `
-    #define DEPTH_COORD_MULTIPLIER 1
-    #define MERGE_COLOR
-    `;
-
-    if (this.undersampling > 0) {
-      this.undersampling = Math.ceil(this.undersampling);
-
-      const scale = 2 ** this.undersampling;
-      [cloudsResolutionX, cloudsResolutionY] = [Math.ceil(resolutionX / scale), Math.ceil(resolutionY / scale)];
-      this.cloudsRt = new WebGLRenderTarget(cloudsResolutionX, cloudsResolutionY, { colorSpace: this.renderer.outputColorSpace });
-
-      cloudsShaderPrefix = `
-      #define DEPTH_COORD_MULTIPLIER ${scale}
-      `;
-
-      this.metaMaterial = new ShaderMaterial({
-        vertexShader: abPostVS,
-        fragmentShader: abMergeFS,
-        uniforms: {
-          sceneTexture: { value: null },
-          cloudsTexture: { value: null },
-          viewportSizeInverse: { value: new Vector2(1 / resolutionX, 1 / resolutionY) },
-        }
-      });
-
-      this.metaScene = new Scene();
-      this.metaScene.add(new Mesh(new PlaneGeometry(2, 2), this.metaMaterial));
-    }
-
-    this.postCamera = new OrthographicCamera(- 1, 1, 1, - 1, 0, 1);
-    if (!this.postMaterial) {
-      this.postMaterial = new ShaderMaterial({
-        vertexShader: abPostVS,
-        fragmentShader: cloudsShaderPrefix + abPostFS,
-        uniforms: {
-          cameraFar: { value: this.camera.far },
-          cameraNear: { value: this.camera.near },
-          worldCameraPosition: { value: this.camera.getWorldPosition(new Vector3()) },
-          viewportSizeInverse: { value: new Vector2(1 / cloudsResolutionX, 1 / cloudsResolutionY) },
-          worldCameraUnprojectionMatrix: { value: this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse) },
-          tDiffuse: { value: null },
-          tDepth: { value: null },
-          timeSeconds: { value: 0 },
-
-          noiseTexture: { value: noiseTexture },
-
-          ditherDepth: { value: 1.0 },
-          densityThreshold: { value: 4.0 },
-          cloudsScale: { value: 120.0 },
-          cloudsAltitude: { value: -110.0 },
-          cloudsAltitudeShift: { value: -180 },
-          cloudsFloorAltitude: { value: 40 },
-          cloudsCeilAltitude: { value: 1000 },
-          cloudsFloorSmoothingRange: { value: 100.0 },
-          cloudsCeilSmoothingRange: { value: 100.0 },
-          cloudsTransitionalLayerScale: { value: 1.95 },
-          maxRMDistance: { value: 10000.0 },
-          minRMStep: { value: 10.0 },
-          rmStepScale: { value: 1.0 },
-          transparencyThreshold: { value: 0.3 },
-
-          detailsScale: { value: 36.0 },
-          detailsIntensity: { value: 1.39 },
-          detailsOffset: { value: new Vector3(0, 0, 0) },
-
-          color1: { value: new Color().setRGB(0.874509804, 0.874509804, 0.796078431) }, // #dfdfcb
-          color2: { value: new Color().setRGB(1, 1, 0.870588235) }, // #ffffde
-          color3: { value: new Color().setRGB(0.19, 0.16, 0.00) },
-          color4: { value: new Color() },
-
-          alpha1: { value: 0.99 },
-          alpha2: { value: 0.95 },
-
-          densityColorGradientLength: { value: 100.0 },
-          densityAlphaGradientLength: { value: 100.0 },
-
-          fogColor: { value: new Color().setRGB(0.5, 0.0, 0.0) },
-          fogTransparency: { value: 0.99 },
-          fogEnabled: { value: false },
-
-          sunDirection: { value: new Vector3(1, 1, 1).normalize() },
-          sunCastDistance: { value: 20.0 },
-        }
-      });
-    } else {
-      this.postMaterial.fragmentShader = cloudsShaderPrefix + abPostFS;
-      this.postMaterial.uniforms.viewportSizeInverse.value = new Vector2(1 / cloudsResolutionX, 1 / cloudsResolutionY);
-      this.postMaterial.needsUpdate = true;
-    }
-    this.postScene = new Scene();
-    this.postScene.add(new Mesh(new PlaneGeometry(2, 2), this.postMaterial));
   }
 
   initLights() {
@@ -582,43 +418,6 @@ class CloudsDemo {
 
   render() {
     this.composer.render();
-
-    return;
-
-    if (this.skipPostProcessing) {
-      this.renderer.setRenderTarget(null);
-      this.renderer.render(this.scene, this.camera);
-    } else {
-      this.renderer.setRenderTarget(this.rt);
-      this.renderer.render(this.scene, this.camera);
-      this.postMaterial.uniforms.tDiffuse.value = this.rt.texture;
-      this.postMaterial.uniforms.tDepth.value = this.rt.depthTexture;
-      this.postMaterial.uniforms.worldCameraPosition.value = this.camera.getWorldPosition(new Vector3());
-      this.postMaterial.uniforms.worldCameraUnprojectionMatrix.value = this.camera.matrixWorld.clone().multiply(this.camera.projectionMatrixInverse);
-      this.postMaterial.uniforms.timeSeconds.value = this.clock.getElapsedTime();
-      this.postMaterial.uniforms.detailsOffset.value = new Vector3(
-        Math.cos(this.clock.getElapsedTime() * this.detailsWindChangeSpeed),
-        Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed * 0.3421),
-        Math.sin(this.clock.getElapsedTime() * this.detailsWindChangeSpeed)
-      ).multiplyScalar(this.detailsWindSpeed);
-
-      if (this.undersampling > 0) {
-        this.renderer.setRenderTarget(this.cloudsRt);
-        this.renderer.setClearColor("black", 0.0);
-        this.renderer.clear(true);
-        this.renderer.render(this.postScene, this.postCamera);
-
-        this.renderer.setRenderTarget(null);
-
-        this.metaMaterial.uniforms.sceneTexture.value = this.rt.texture;
-        this.metaMaterial.uniforms.cloudsTexture.value = this.cloudsRt.texture;
-
-        this.renderer.render(this.metaScene, this.postCamera);
-      } else {
-        this.renderer.setRenderTarget(null);
-        this.renderer.render(this.postScene, this.postCamera);
-      }
-    }
   }
 
   resize() {
@@ -633,80 +432,6 @@ class CloudsDemo {
     this.renderer.setPixelRatio(pixelRatio);
 
     this.composer.setSize(this.containerBounds.width, this.containerBounds.height);
-  }
-
-  initObjects() {
-    const material = new MeshStandardMaterial({
-      color: 0x57b5f7,
-      roughness: 1,
-      // metalness: 1,
-      flatShading: true,
-      side: DoubleSide
-    });
-
-    let object = new Mesh(new SphereGeometry(75, 20, 10), material);
-    object.position.set(-300, 0, 200);
-    this.scene.add(object);
-
-    object = new Mesh(new IcosahedronGeometry(75, 1), material);
-    object.position.set(-100, 0, 200);
-    this.scene.add(object);
-
-    object = new Mesh(new OctahedronGeometry(75, 2), material);
-    object.position.set(100, 0, 200);
-    this.scene.add(object);
-
-    object = new Mesh(new TetrahedronGeometry(75, 0), material);
-    object.position.set(300, 0, 200);
-    this.scene.add(object);
-
-    //
-
-    object = new Mesh(new PlaneGeometry(100, 100, 4, 4), material);
-    object.position.set(- 300, 0, 0);
-    this.scene.add(object);
-
-    object = new Mesh(new BoxGeometry(100, 100, 100, 4, 4, 4), material);
-    object.position.set(- 100, 0, 0);
-    this.scene.add(object);
-
-    object = new Mesh(new CircleGeometry(50, 20, 0, Math.PI * 2), material);
-    object.position.set(100, 0, 0);
-    this.scene.add(object);
-
-    object = new Mesh(new RingGeometry(10, 50, 20, 5, 0, Math.PI * 2), material);
-    object.position.set(300, 0, 0);
-    this.scene.add(object);
-
-    //
-
-    object = new Mesh(new CylinderGeometry(25, 75, 100, 40, 5), material);
-    object.position.set(-300, 0, -200);
-    this.scene.add(object);
-
-    const points = [];
-
-    for (let i = 0; i < 50; i++) {
-
-      points.push(new Vector2(Math.sin(i * 0.2) * Math.sin(i * 0.1) * 15 + 50, (i - 5) * 2));
-
-    }
-
-    object = new Mesh(new LatheGeometry(points, 20), material);
-    object.position.set(-100, 0, -200);
-    this.scene.add(object);
-
-    object = new Mesh(new TorusGeometry(50, 20, 20, 20), material);
-    object.position.set(100, 0, -200);
-    this.scene.add(object);
-
-    object = new Mesh(new TorusKnotGeometry(50, 10, 50, 20), material);
-    object.position.set(300, 0, -200);
-    this.scene.add(object);
-
-    object = new Mesh(new TorusKnotGeometry(50, 10, 50, 20), material);
-    object.position.set(0, 0, 10000);
-    this.scene.add(object);
   }
 }
 

@@ -9,11 +9,13 @@ export class DirectCloudsEffect extends BaseCloudsEffect {
         camera,
         clock,
         noiseTexture,
+        noiseTexture3d,
     }) {
         super('DirectCloudsEffect', {
             camera,
             clock,
             noiseTexture,
+            noiseTexture3d,
 
             blendFunction: BlendFunction.NORMAL,
 

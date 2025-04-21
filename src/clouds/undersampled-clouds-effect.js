@@ -9,11 +9,13 @@ class LowResolutionCloudsEffect extends BaseCloudsEffect {
         camera,
         clock,
         noiseTexture,
+        noiseTexture3d,
     }) {
         super("LowResolutionClouds", {
             camera,
             clock,
             noiseTexture,
+            noiseTexture3d,
             uniforms: new Map([
                 ["depthInputOverrideTexture", new Uniform(noiseTexture)],
             ]),
@@ -56,6 +58,7 @@ export class UndersampledCloudsPass extends EffectPass {
         camera,
         clock,
         noiseTexture,
+        noiseTexture3d,
         undersampling,
         renderer,
     }) {
@@ -65,7 +68,7 @@ export class UndersampledCloudsPass extends EffectPass {
 
         this.undersampling = undersampling;
 
-        this._cloudsEffect = new LowResolutionCloudsEffect({ camera, clock, noiseTexture });
+        this._cloudsEffect = new LowResolutionCloudsEffect({ camera, clock, noiseTexture, noiseTexture3d });
         this._mergeEffect = mergeEffect;
 
         this._sidechainComposer = new EffectComposer(

@@ -48,6 +48,8 @@ uniform bool fogEnabled;
 
 uniform sampler2D noiseTexture;
 
+uniform sampler3D noiseTexture3d;
+
 uniform vec3 sunDirection;
 uniform float sunCastDistance;
 
@@ -71,6 +73,8 @@ float fpn(vec3 p)
 float random(vec2 co) {
   return fract(sin(dot(co * 0.123, vec2(12.9898, 78.233))) * 43758.5453);
 }
+
+#if 0
 
 // otaviogood's noise from https://www.shadertoy.com/view/ld2SzK
 //--------------------------------------------------------------
@@ -120,6 +124,19 @@ float SpiralNoise3D(vec3 p) {
   return n;
 }
 
+#else
+
+float SpiralNoiseC(vec3 p) {
+  return (texture(noiseTexture3d, p * 0.01).r * 2.0 - 1.0) * 3.0;
+}
+
+float SpiralNoise3D(vec3 p) {
+  return SpiralNoiseC(p);
+  // return texture(noiseTexture3d, p * 0.01).r * 10.0 - 5.0;
+}
+
+#endif
+
 // Returns a value correlating with distance towards a surface of a cloud from fiven point in world space.
 // Negative value is returned for points inside the cloud, positive for points outside.
 // This is similar to Signed Distance Field (SDF), but the value does not (or does it?) represent exact distance to the surface.
@@ -142,7 +159,7 @@ float get_cloud_distance(vec3 p) {
   // final -= SpiralNoise3D(p*49.0 + vec3(timeSeconds))*0.0625*0.125; // small scale noise for variation
 
   // Add texture-based noise
-  final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
+  //final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
 
   // scale result back, so it's closer to distance to cloud surface, 0.326 - magic number from the original shader.
   return final * cloudsScale * 0.326;
@@ -278,4 +295,6 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
     outputColor.rgb = color_acc;
     outputColor.a = 1.0 - transparency;
 #endif
+
+  // outputColor = vec4(texture(noiseTexture3d, vec3(screen_offset, timeSeconds)).xyz, 1.0);
 }

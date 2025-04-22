@@ -127,12 +127,11 @@ float SpiralNoise3D(vec3 p) {
 #else
 
 float SpiralNoiseC(vec3 p) {
-  return (texture(noiseTexture3d, p * 0.01).r * 2.0 - 1.0) * 3.0;
+  return -abs((texture(noiseTexture3d, p * 0.02).r * 2.0 - 1.0) * 1.5);
 }
 
 float SpiralNoise3D(vec3 p) {
-  return SpiralNoiseC(p);
-  // return texture(noiseTexture3d, p * 0.01).r * 10.0 - 5.0;
+  return (texture(noiseTexture3d, p * 0.02).r * 2.0 - 1.0) * 4.0;
 }
 
 #endif

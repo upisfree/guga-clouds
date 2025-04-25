@@ -127,11 +127,11 @@ float SpiralNoise3D(vec3 p) {
 #else
 
 float SpiralNoiseC(vec3 p) {
-  return -abs((texture(noiseTexture3d, p * 0.02).r * 2.0 - 1.0) * 1.5);
+  return -abs(texture(noiseTexture3d, p * 0.02).r);
 }
 
 float SpiralNoise3D(vec3 p) {
-  return (texture(noiseTexture3d, p * 0.02).r * 2.0 - 1.0) * 4.0;
+  return texture(noiseTexture3d, p * 0.02).r;
 }
 
 #endif
@@ -158,7 +158,7 @@ float get_cloud_distance(vec3 p) {
   // final -= SpiralNoise3D(p*49.0 + vec3(timeSeconds))*0.0625*0.125; // small scale noise for variation
 
   // Add texture-based noise
-  //final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
+  final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
 
   // scale result back, so it's closer to distance to cloud surface, 0.326 - magic number from the original shader.
   return final * cloudsScale * 0.326;

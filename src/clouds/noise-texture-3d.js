@@ -1,4 +1,4 @@
-import { Data3DTexture, UnsignedByteType, RedFormat, RepeatWrapping, LinearFilter } from 'three';
+import { Data3DTexture, UnsignedByteType, RedFormat, RepeatWrapping, LinearFilter, FloatType } from 'three';
 
 const nudge = 0.739513;
 const normalizer = 1.0 / Math.sqrt(1.0 + nudge * nudge);
@@ -24,7 +24,7 @@ function noise1(x, y, z) {
 }
 
 export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
-    const ab = new Uint8Array(size * size * size);
+    const ab = new Float32Array(size * size * size);
 
     let i = 0;
     for (let z = 0; z < size; ++z) {
@@ -36,7 +36,7 @@ export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
 
                 const vf = noiseFn(xf, yf, zf);
 
-                ab[i++] = Math.max(0, Math.min(255, 255 * vf));
+                ab[i++] = vf;
             }
         }
     }
@@ -44,7 +44,7 @@ export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
     const tx = new Data3DTexture(ab, size, size, size);
     tx.wrapR = tx.wrapS = tx.wrapT = RepeatWrapping;
     tx.format = RedFormat;
-    tx.type = UnsignedByteType;
+    tx.type = FloatType;
     tx.needsUpdate = true;
     tx.magFilter = LinearFilter;
     tx.minFilter = LinearFilter;

@@ -29989,7 +29989,7 @@ function Jy({ noiseTexture: n, noiseTexture3d: e, extraUniforms: t = /* @__PURE_
     ["cloudsScale", new me(120)],
     ["cloudsAltitude", new me(-369)],
     ["cloudsAltitudeShift", new me(-141)],
-    ["cloudsFloorAltitude", new me(120)],
+    ["cloudsFloorAltitude", new me(300)],
     ["cloudsCeilAltitude", new me(804)],
     ["cloudsFloorSmoothingRange", new me(347)],
     ["cloudsCeilSmoothingRange", new me(168)],
@@ -30176,7 +30176,7 @@ const Oh = new nd().load(Hw, (n) => {
 }), Gh = iI({ size: 128 });
 class rI {
   constructor(e) {
-    this.container = e, this.undersampling = 2, this.geometryMultisampling = 8, this.clock = new pp(!0), this.init3D(), this.initLevel(), this.pane = new Gw(), this.initPane(), this.update();
+    this.container = e, this.undersampling = 0, this.geometryMultisampling = 8, this.clock = new pp(!0), this.init3D(), this.initLevel(), this.pane = new Gw(), this.initPane(), this.update();
   }
   init3D() {
     this.renderer = new ob({
@@ -30186,7 +30186,7 @@ class rI {
       depth: !1,
       alpha: !1,
       logarithmicDepthBuffer: !0
-    }), this.renderer.outputColorSpace = ct, this.container.appendChild(this.renderer.domElement), this.stats = new Js(), this.container.appendChild(this.stats.dom), this.showStats = !0, this.skipPostProcessing = !1, this.scene = new wo(), this.scene.background = new we(10800116), this.renderer.toneMapping = 0, this.renderer.toneMappingExposure = 1, this.camera = new kt(75, 1, 0.1, 1e5), this.controls = new mE(this.camera.position, this.camera.quaternion, this.renderer.domElement), this.controls.settings.general.mode = Id.FIRST_PERSON, this.controls.settings.pointer.behaviour = Sd.LOCK, this.controls.settings.translation.sensitivity = 100, this.controls.settings.translation.boostMultiplier = 10, this.controls.settings.rotation.sensitivity = 2.5, this.cloudsEffect = new jy({
+    }), this.renderer.outputColorSpace = ct, this.container.appendChild(this.renderer.domElement), this.stats = new Js(), this.container.appendChild(this.stats.dom), this.showStats = !0, this.skipPostProcessing = !1, this.scene = new wo(), this.scene.background = new we(10800116), this.renderer.toneMapping = 0, this.renderer.toneMappingExposure = 1, this.camera = new kt(75, 1, 0.1, 1e5), console.log(this.camera), this.controls = new mE(this.camera.position, this.camera.quaternion, this.renderer.domElement), this.controls.settings.general.mode = Id.FIRST_PERSON, this.controls.settings.pointer.behaviour = Sd.LOCK, this.controls.settings.translation.sensitivity = 100, this.controls.settings.translation.boostMultiplier = 10, this.controls.settings.rotation.sensitivity = 2.5, this.cloudsEffect = new jy({
       camera: this.camera,
       clock: this.clock,
       noiseTexture: Oh,
@@ -30200,10 +30200,14 @@ class rI {
       noiseTexture3d: Gh,
       undersampling: 16,
       renderer: this.renderer
-    }), this.composer.addPass(this._directCloudsPass), this.composer.addPass(this._undersampledCloudsPass), this.updateUndersampling(), this.smaaPreset = Li.MEDIUM, this.smaaEffect = new _y({ preset: this.smaaPreset }), this.smaaPass = new js(this.camera, this.smaaEffect), this.composer.addPass(this.smaaPass), this.composer.addPass(new js(this.camera)), this.uniformProxy = Wy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]), this.wind = new Xy(this.uniformProxy, this.clock), this.camera.position.set(0, 50, 100), this.camera.rotation.set(
-      0,
-      0,
-      0
+    }), this.composer.addPass(this._directCloudsPass), this.composer.addPass(this._undersampledCloudsPass), this.updateUndersampling(), this.smaaPreset = Li.MEDIUM, this.smaaEffect = new _y({ preset: this.smaaPreset }), this.smaaPass = new js(this.camera, this.smaaEffect), this.composer.addPass(this.smaaPass), this.composer.addPass(new js(this.camera)), this.uniformProxy = Wy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]), this.wind = new Xy(this.uniformProxy, this.clock), this.camera.position.set(
+      -92.8154178824343,
+      137.35523649956534,
+      -169.17262210874802
+    ), this.camera.rotation.set(
+      -2.8093107276299527,
+      -0.5170788715507756,
+      -2.9726328526083474
     ), location.search.includes("upisfree") && (this.camera.position.set(
       80,
       9,
@@ -30219,7 +30223,7 @@ class rI {
     e > 0 ? (this._undersampledCloudsPass.enabled = !0, this._directCloudsPass.enabled = !1, this._undersampledCloudsPass.undersampling = e) : (this._undersampledCloudsPass.enabled = !1, this._directCloudsPass.enabled = !0);
   }
   initPane() {
-    const e = this.pane.addFolder({ title: "Clouds" }), t = e.addFolder({ title: "Shape", expanded: !1 });
+    const e = this.pane.addFolder({ title: "Clouds", expanded: !1 }), t = e.addFolder({ title: "Shape", expanded: !1 });
     t.addBinding(this.uniformProxy, "cloudsScale", {
       label: "Scale",
       min: 1,

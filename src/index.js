@@ -44,7 +44,7 @@ class CloudsDemo {
   constructor(container) {
     this.container = container;
 
-    this.undersampling = 2;
+    this.undersampling = 0;
 
     this.geometryMultisampling = 8;
 
@@ -86,6 +86,8 @@ class CloudsDemo {
     this.renderer.toneMappingExposure = 1;
 
     this.camera = new PerspectiveCamera(75, 1, 0.1, 100000);
+
+    console.log(this.camera)
 
     this.controls = new SpatialControls(this.camera.position, this.camera.quaternion, this.renderer.domElement);
     this.controls.settings.general.mode = ControlMode.FIRST_PERSON;
@@ -129,9 +131,15 @@ class CloudsDemo {
 
     this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]);
     this.wind = new Wind(this.uniformProxy, this.clock);
-    this.camera.position.set(0, 50, 100);
+    this.camera.position.set(
+      -92.8154178824343,
+      137.35523649956534,
+      -169.17262210874802
+    );
     this.camera.rotation.set(
-      0, 0, 0
+      -2.8093107276299527,
+      -0.5170788715507756,
+      -2.9726328526083474
     );
 
     if (location.search.includes('upisfree')) {
@@ -172,7 +180,7 @@ class CloudsDemo {
   }
 
   initPane() {
-    const cloudsFolder = this.pane.addFolder({ title: "Clouds" });
+    const cloudsFolder = this.pane.addFolder({ title: "Clouds", expanded: false });
 
     const cloudsShapeFolder = cloudsFolder.addFolder({ title: "Shape", expanded: false });
     cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsScale", {

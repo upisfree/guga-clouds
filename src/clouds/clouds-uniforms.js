@@ -1,7 +1,7 @@
 import { Uniform, Vector2, Vector3, Matrix4, Color } from "three";
 
 /**
- * @param {{noiseTexture: import("three").Texture, extraUniforms: Map<string, import("three").Uniform>}} param0 
+ * @param {{noiseTexture: import("three").Texture, extraUniforms: Map<string, import("three").Uniform>}} param0
  * @returns {Map<string, import("three").Uniform>}
  */
 export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUniforms = new Map() }) {
@@ -19,7 +19,7 @@ export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUn
         ['cloudsScale', new Uniform(120.0)],
         ['cloudsAltitude', new Uniform(-369.0)],
         ['cloudsAltitudeShift', new Uniform(-141)],
-        ['cloudsFloorAltitude', new Uniform(120)],
+        ['cloudsFloorAltitude', new Uniform(300)],
         ['cloudsCeilAltitude', new Uniform(804)],
         ['cloudsFloorSmoothingRange', new Uniform(347.0)],
         ['cloudsCeilSmoothingRange', new Uniform(168.0)],

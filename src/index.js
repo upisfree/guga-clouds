@@ -163,7 +163,7 @@ class CloudsDemo {
 
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
-    window.addEventListener('resize', () => this.initPost());
+    // window.addEventListener('resize', () => this.initPost());
 
     this.gridHelper = new GridHelper(10000, 150);
     this.scene.add(this.gridHelper);
@@ -445,7 +445,8 @@ class CloudsDemo {
     this.camera.aspect = this.containerBounds.width / this.containerBounds.height;
     this.camera.updateProjectionMatrix();
 
-    let pixelRatio = window.devicePixelRatio;
+    // cap pixel ratio on 2 on mobiles because it's hard to render for them and not very much visual difference
+    let pixelRatio = Math.min(2, window.devicePixelRatio);
 
     // composer.setSize() учитывает pixel ratio WebGLRenderer
     this.renderer.setPixelRatio(pixelRatio);

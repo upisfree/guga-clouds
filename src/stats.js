@@ -51,7 +51,7 @@ class Stats {
     this.isMemoryInfoAvailable = performance.memory !== undefined;
 
     if (this.isMemoryInfoAvailable) {
-      this.heapLimit = performance.memory.jsHeapSizeLimit / MB;
+      this.heapLimit = Math.floor(performance.memory.jsHeapSizeLimit / MB);
     }
 
     if (navigator.hardwareConcurrency) {
@@ -83,7 +83,7 @@ ${ navigator.platform }`;
     }
 
     t += `
-${ this.demo.containerBounds.width }×${ this.demo.containerBounds.height }, ${ window.devicePixelRatio }x pixel ratio, ${ screen.colorDepth }-bit color (${ this.videoCardVendor })
+${ Math.floor(this.demo.containerBounds.width) }×${ Math.floor(this.demo.containerBounds.height) }, ${ window.devicePixelRatio }x pixel ratio, ${ screen.colorDepth }-bit color (${ this.videoCardVendor })
 ${ this.videoCardRenderer }
 precision: ${ this.precision }
 max texture size: ${ this.maxTextureSize.toLocaleString() }

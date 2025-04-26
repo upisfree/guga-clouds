@@ -53,7 +53,9 @@ class CloudsDemo {
 
     this.init3D();
 
-    this.initLevel();
+    this.initLevel().then(() => {
+      document.getElementById('model-loader').style.display = 'none';
+    });
 
     this.statsText = new StatsText(this, this.renderer);
     document.getElementById('device').textContent = this.statsText.getText();

@@ -30,6 +30,7 @@ import { Wind } from './clouds/wind';
 import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
 import { UndersampledCloudsPass } from './clouds/undersampled-clouds-effect';
 import { createNoiseTexture3D } from './clouds/noise-texture-3d';
+import StatsText from './stats';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -53,6 +54,9 @@ class CloudsDemo {
     this.init3D();
 
     this.initLevel();
+
+    this.statsText = new StatsText(this, this.renderer);
+    document.getElementById('device').textContent = this.statsText.getText();
 
     this.pane = new Pane();
     this.initPane();

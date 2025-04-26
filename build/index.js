@@ -30188,13 +30188,13 @@ class rI {
     Y(this, "lastUpdate");
     this.demo = e, this.renderer = t;
     let i = this.renderer.getContext();
-    this.videoCardInfo = this.renderer.extensions.get("WEBGL_debug_renderer_info"), this.videoCardVendor = i.getParameter(this.videoCardInfo.UNMASKED_VENDOR_WEBGL), this.videoCardRenderer = i.getParameter(this.videoCardInfo.UNMASKED_RENDERER_WEBGL), this.precision = this.renderer.capabilities.precision, this.contextName = this.renderer.getContext().constructor.name, this.maxTextureSize = this.renderer.capabilities.maxTextureSize, this.isMemoryInfoAvailable = performance.memory !== void 0, this.isMemoryInfoAvailable && (this.heapLimit = performance.memory.jsHeapSizeLimit / sI), navigator.hardwareConcurrency && (this.hardwareConcurrency = navigator.hardwareConcurrency);
+    this.videoCardInfo = this.renderer.extensions.get("WEBGL_debug_renderer_info"), this.videoCardVendor = i.getParameter(this.videoCardInfo.UNMASKED_VENDOR_WEBGL), this.videoCardRenderer = i.getParameter(this.videoCardInfo.UNMASKED_RENDERER_WEBGL), this.precision = this.renderer.capabilities.precision, this.contextName = this.renderer.getContext().constructor.name, this.maxTextureSize = this.renderer.capabilities.maxTextureSize, this.isMemoryInfoAvailable = performance.memory !== void 0, this.isMemoryInfoAvailable && (this.heapLimit = Math.floor(performance.memory.jsHeapSizeLimit / sI)), navigator.hardwareConcurrency && (this.hardwareConcurrency = navigator.hardwareConcurrency);
   }
   getText() {
     let e = "";
     return this.isMemoryInfoAvailable && (e += `mem: ${this.heapLimit} MB`), e += `
 ${navigator.platform}`, navigator.hardwareConcurrency && (e += `, ${navigator.hardwareConcurrency} core`, navigator.hardwareConcurrency > 1 && (e += "s")), navigator.deviceMemory && (e += `, ${navigator.deviceMemory} GB of RAM`), e += `
-${this.demo.containerBounds.width}×${this.demo.containerBounds.height}, ${window.devicePixelRatio}x pixel ratio, ${screen.colorDepth}-bit color (${this.videoCardVendor})
+${Math.floor(this.demo.containerBounds.width)}×${Math.floor(this.demo.containerBounds.height)}, ${window.devicePixelRatio}x pixel ratio, ${screen.colorDepth}-bit color (${this.videoCardVendor})
 ${this.videoCardRenderer}
 precision: ${this.precision}
 max texture size: ${this.maxTextureSize.toLocaleString()}
@@ -30206,7 +30206,9 @@ const Oh = new nd().load(Hw, (n) => {
 }), Gh = iI({ size: 128 });
 class oI {
   constructor(e) {
-    this.container = e, this.undersampling = 0, this.geometryMultisampling = 8, this.clock = new pp(!0), this.init3D(), this.initLevel(), this.statsText = new rI(this, this.renderer), document.getElementById("device").textContent = this.statsText.getText(), this.pane = new Gw(), this.initPane(), this.update();
+    this.container = e, this.undersampling = 0, this.geometryMultisampling = 8, this.clock = new pp(!0), this.init3D(), this.initLevel().then(() => {
+      document.getElementById("model-loader").style.display = "none";
+    }), this.statsText = new rI(this, this.renderer), document.getElementById("device").textContent = this.statsText.getText(), this.pane = new Gw(), this.initPane(), this.update();
   }
   init3D() {
     this.renderer = new ob({
@@ -30246,7 +30248,7 @@ class oI {
       -2.8565540938041662,
       0.4430787851422483,
       3.01662397220497
-    )), this.resize(), window.addEventListener("resize", this.resize.bind(this)), window.addEventListener("resize", () => this.initPost()), this.gridHelper = new yp(1e4, 150), this.scene.add(this.gridHelper), this.gridHelper.visible = !1, this.initLights();
+    )), this.resize(), window.addEventListener("resize", this.resize.bind(this)), this.gridHelper = new yp(1e4, 150), this.scene.add(this.gridHelper), this.gridHelper.visible = !1, this.initLights();
   }
   updateUndersampling() {
     const e = Math.round(this.undersampling);
@@ -30419,7 +30421,7 @@ class oI {
   }
   resize() {
     this.containerBounds = this.container.getBoundingClientRect(), this.camera.aspect = this.containerBounds.width / this.containerBounds.height, this.camera.updateProjectionMatrix();
-    let e = window.devicePixelRatio;
+    let e = Math.min(2, window.devicePixelRatio);
     this.renderer.setPixelRatio(e), this.composer.setSize(this.containerBounds.width, this.containerBounds.height);
   }
 }

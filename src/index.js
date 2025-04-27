@@ -330,22 +330,22 @@ class CloudsDemo {
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
     cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsScale", {
       label: "Scale",
-      min: 10.0,
+      min: 0.0,
       max: 70.0,
     });
     cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsIntensity", {
       label: "Intensity",
-      min: 1.0,
+      min: 0.0,
       max: 10.0,
     });
     cloudsDetailsFolder.addBinding(this.wind, "detailsWindSpeed", {
       label: "Wind speed",
-      min: 100,
+      min: 0,
       max: 5000,
     });
     cloudsDetailsFolder.addBinding(this.wind, "detailsWindChangeSpeed", {
       label: "Wind change speed",
-      min: 0.05,
+      min: 0,
       max: 1.0,
     });
 

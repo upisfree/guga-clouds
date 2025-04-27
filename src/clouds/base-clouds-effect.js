@@ -21,12 +21,12 @@ export class BaseCloudsEffect extends Effect {
         this._camera = camera;
         this._clock = clock;
     }
-    
+
     update(renderer, inputBuffer, deltaTime) {
         const camera = this._camera;
         const uniforms = this.uniforms;
 
-        uniforms.get('timeSeconds').value = this._clock.getElapsedTime();
+        uniforms.get('timeSeconds').value = 1;
 
         camera.getWorldPosition(uniforms.get("worldCameraPosition").value);
 

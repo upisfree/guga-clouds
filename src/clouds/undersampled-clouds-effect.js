@@ -1,6 +1,6 @@
 import { Effect, EffectComposer, EffectPass, EffectAttribute, BlendFunction } from "postprocessing";
 import mergeShader from "./clouds-merge.frag.glsl?raw";
-import { HalfFloatType, Uniform, Vector2 } from "three";
+import { HalfFloatType, NearestFilter, Uniform, Vector2 } from "three";
 import { BaseCloudsEffect } from "./base-clouds-effect";
 
 
@@ -106,6 +106,7 @@ export class UndersampledCloudsPass extends EffectPass {
 
         this._sidechainComposer.render(deltaTime);
         
+        this._sidechainComposer.outputBuffer.texture.magFilter = NearestFilter;
         this._mergeEffect.cloudsTexture = this._sidechainComposer.outputBuffer.texture;
 
         renderer.setSize(outputBuffer.width, outputBuffer.height, false);

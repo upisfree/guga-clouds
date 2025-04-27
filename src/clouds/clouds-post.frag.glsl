@@ -126,12 +126,19 @@ float SpiralNoise3D(vec3 p) {
 
 #else
 
+#define NOISE_TEXTURE_3D_RANGE_MIN -6.0
+#define NOISE_TEXTURE_3D_RANGE_MAX 6.0
+
+float readNoiseTexture3d(vec3 p) {
+  return mix(NOISE_TEXTURE_3D_RANGE_MIN, NOISE_TEXTURE_3D_RANGE_MAX, texture(noiseTexture3d, p).r);
+}
+
 float SpiralNoiseC(vec3 p) {
-  return -abs(texture(noiseTexture3d, p * 0.02).r);
+  return -abs(readNoiseTexture3d(p * 0.03));
 }
 
 float SpiralNoise3D(vec3 p) {
-  return texture(noiseTexture3d, p * 0.02).r;
+  return readNoiseTexture3d(p * 0.02);
 }
 
 #endif

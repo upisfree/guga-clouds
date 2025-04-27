@@ -23,8 +23,10 @@ function noise1(x, y, z) {
     return n;
 }
 
+const rangeMin = -6, rangeMax = 6;
+
 export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
-    const ab = new Float32Array(size * size * size);
+    const ab = new Uint8Array(size * size * size);
 
     let i = 0;
     for (let z = 0; z < size; ++z) {
@@ -36,7 +38,9 @@ export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
 
                 const vf = noiseFn(xf, yf, zf);
 
-                ab[i++] = vf;
+                const vff = (vf - rangeMin) / (rangeMax - rangeMin);
+
+                ab[i++] = vff * 255.0;
             }
         }
     }
@@ -44,7 +48,7 @@ export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
     const tx = new Data3DTexture(ab, size, size, size);
     tx.wrapR = tx.wrapS = tx.wrapT = RepeatWrapping;
     tx.format = RedFormat;
-    tx.type = FloatType;
+    tx.type = UnsignedByteType;
     tx.needsUpdate = true;
     tx.magFilter = LinearFilter;
     tx.minFilter = LinearFilter;

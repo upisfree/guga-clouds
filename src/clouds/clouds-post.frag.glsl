@@ -5,10 +5,6 @@
 // clouds image, resulting in an opaque image.
 // Otherwise, the shader will render clouds only, saving accumulated clouds transparency in alpha channel of resulting image.
 
-#ifdef OVERRIDE_DEPTH_INPUT
-uniform sampler2D depthInputOverrideTexture;
-#endif
-
 uniform vec2 viewportSizeInverse;
 uniform vec3 worldCameraPosition;
 uniform mat4 worldCameraUnprojectionMatrix;
@@ -185,12 +181,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
     // Integer screenspace coordinates for texelFetch calls
     ivec2 texelCoords = ivec2(gl_FragCoord.xy);
 
-#ifdef OVERRIDE_DEPTH_INPUT
-  // Read depth from a custom buffer, if any
-  float depthSample = texture2D(depthInputOverrideTexture, uv).r;
-#else
-  float depthSample = depth;
-#endif
+    float depthSample = depth;
 
 #ifdef USE_LOGDEPTHBUF
   depthSample = linearize_depth(depthSample);
@@ -301,6 +292,4 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
     outputColor.rgb = color_acc;
     outputColor.a = 1.0 - transparency;
 #endif
-
-  // outputColor = vec4(texture(noiseTexture3d, vec3(screen_offset, timeSeconds)).xyz, 1.0);
 }

@@ -149,7 +149,6 @@ class CloudsDemo {
 
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
-    window.addEventListener('resize', () => this.initPost());
 
     this.gridHelper = new GridHelper(10000, 150);
     this.scene.add(this.gridHelper);

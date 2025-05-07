@@ -17,12 +17,12 @@ void main(void) {
 `;
 
 class CloudsScene extends Scene {
-    constructor({ noiseTexture }) {
+    constructor({ noiseTexture, noiseTexture3d }) {
         super();
 
         this._material = new ShaderMaterial({
             fragmentShader: cloudsRawShader,
-            uniforms: makeCloudsShaderUniforms({  })
+            uniforms: makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d })
         })
         // TODO
     }
@@ -48,6 +48,7 @@ export class UndersampledCloudsPass extends EffectPass {
         camera,
         clock,
         noiseTexture,
+        noiseTexture3d,
         undersampling,
         renderer,
     }) {
@@ -92,7 +93,7 @@ export class UndersampledCloudsPass extends EffectPass {
         renderer.setRenderTarget(this._rt);
 
         // TODO: Render clouds
-        
+
         this._mergeEffect.cloudsTexture = this._rt.texture;
 
         super.render(renderer, inputBuffer, outputBuffer, deltaTime, stencilTest);

@@ -48,6 +48,8 @@ uniform bool fogEnabled;
 
 uniform sampler2D noiseTexture;
 
+uniform sampler3D noiseTexture3d;
+
 uniform vec3 sunDirection;
 uniform float sunCastDistance;
 
@@ -71,6 +73,8 @@ float fpn(vec3 p)
 float random(vec2 co) {
   return fract(sin(dot(co * 0.123, vec2(12.9898, 78.233))) * 43758.5453);
 }
+
+#if 0
 
 // otaviogood's noise from https://www.shadertoy.com/view/ld2SzK
 //--------------------------------------------------------------
@@ -119,6 +123,25 @@ float SpiralNoise3D(vec3 p) {
 
   return n;
 }
+
+#else
+
+#define NOISE_TEXTURE_3D_RANGE_MIN -6.0
+#define NOISE_TEXTURE_3D_RANGE_MAX 6.0
+
+float readNoiseTexture3d(vec3 p) {
+  return mix(NOISE_TEXTURE_3D_RANGE_MIN, NOISE_TEXTURE_3D_RANGE_MAX, texture(noiseTexture3d, p).r);
+}
+
+float SpiralNoiseC(vec3 p) {
+  return -abs(readNoiseTexture3d(p * 0.03));
+}
+
+float SpiralNoise3D(vec3 p) {
+  return readNoiseTexture3d(p * 0.02);
+}
+
+#endif
 
 // Returns a value correlating with distance towards a surface of a cloud from fiven point in world space.
 // Negative value is returned for points inside the cloud, positive for points outside.
@@ -278,4 +301,6 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
     outputColor.rgb = color_acc;
     outputColor.a = 1.0 - transparency;
 #endif
+
+  // outputColor = vec4(texture(noiseTexture3d, vec3(screen_offset, timeSeconds)).xyz, 1.0);
 }

@@ -4,7 +4,7 @@ import { Uniform, Vector2, Vector3, Matrix4, Color } from "three";
  * @param {{noiseTexture: import("three").Texture, extraUniforms: Map<string, import("three").Uniform>}} param0 
  * @returns {Map<string, import("three").Uniform>}
  */
-export function makeCloudsShaderUniforms({ noiseTexture, extraUniforms = new Map() }) {
+export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUniforms = new Map() }) {
     return new Map([
         ['worldCameraPosition', new Uniform(new Vector3())], // TODO: можно забирать напрямую с камеры
         ['viewportSizeInverse', new Uniform(new Vector2(1, 1))],
@@ -12,17 +12,18 @@ export function makeCloudsShaderUniforms({ noiseTexture, extraUniforms = new Map
         ['timeSeconds', new Uniform(0)],
 
         ['noiseTexture', new Uniform(noiseTexture)],
+        ['noiseTexture3d', new Uniform(noiseTexture3d)],
 
         ['ditherDepth', new Uniform(1.0)],
         ['densityThreshold', new Uniform(4.0)],
         ['cloudsScale', new Uniform(120.0)],
-        ['cloudsAltitude', new Uniform(-110.0)],
-        ['cloudsAltitudeShift', new Uniform(-180)],
-        ['cloudsFloorAltitude', new Uniform(40)],
-        ['cloudsCeilAltitude', new Uniform(1000)],
-        ['cloudsFloorSmoothingRange', new Uniform(100.0)],
-        ['cloudsCeilSmoothingRange', new Uniform(100.0)],
-        ['cloudsTransitionalLayerScale', new Uniform(1.95)],
+        ['cloudsAltitude', new Uniform(-369.0)],
+        ['cloudsAltitudeShift', new Uniform(-141)],
+        ['cloudsFloorAltitude', new Uniform(120)],
+        ['cloudsCeilAltitude', new Uniform(804)],
+        ['cloudsFloorSmoothingRange', new Uniform(347.0)],
+        ['cloudsCeilSmoothingRange', new Uniform(168.0)],
+        ['cloudsTransitionalLayerScale', new Uniform(2.5)],
         ['maxRMDistance', new Uniform(10000.0)],
         ['minRMStep', new Uniform(10.0)],
         ['rmStepScale', new Uniform(1.0)],

@@ -29,6 +29,7 @@ import { makeUniformsProxy } from './clouds/uniforms-proxy';
 import { Wind } from './clouds/wind';
 import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
 import { UndersampledCloudsPass } from './clouds/undersampled-clouds-effect';
+import { createNoiseTexture3D } from './clouds/noise-texture-3d';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -36,6 +37,8 @@ const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.wrapS = RepeatWrapping;
   tx.wrapT = RepeatWrapping;
 });
+
+const noiseTexture3d = createNoiseTexture3D({ size: 128 });
 
 class CloudsDemo {
   constructor(container) {
@@ -95,6 +98,7 @@ class CloudsDemo {
       camera: this.camera,
       clock: this.clock,
       noiseTexture,
+      noiseTexture3d,
     });
 
     this.composer = new EffectComposer(this.renderer, {
@@ -108,6 +112,7 @@ class CloudsDemo {
       camera: this.camera,
       clock: this.clock,
       noiseTexture,
+      noiseTexture3d,
       undersampling: 16,
       renderer: this.renderer,
     });

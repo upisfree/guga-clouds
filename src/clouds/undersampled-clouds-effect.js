@@ -1,37 +1,30 @@
 import { Effect, EffectComposer, EffectPass, EffectAttribute, BlendFunction } from "postprocessing";
 import mergeShader from "./clouds-merge.frag.glsl?raw";
-import { HalfFloatType, NearestFilter, Uniform, Vector2 } from "three";
-import { BaseCloudsEffect } from "./base-clouds-effect";
+import cloudsEffectShader from "./clouds-post.frag.glsl?raw";
+import { HalfFloatType, NearestFilter, Scene, ShaderMaterial, Uniform, Vector2, WebGLRenderTarget } from "three";
+import { makeCloudsShaderUniforms } from "./clouds-uniforms";
 
 
-class LowResolutionCloudsEffect extends BaseCloudsEffect {
-    constructor({
-        camera,
-        clock,
-        noiseTexture,
-    }) {
-        super("LowResolutionClouds", {
-            camera,
-            clock,
-            noiseTexture,
-            uniforms: new Map([
-                ["depthInputOverrideTexture", new Uniform(noiseTexture)],
-            ]),
-            defines: new Map([
-                ["OVERRIDE_DEPTH_INPUT", "1"],
-            ]),
+const cloudsRawShader = `
+#define OVERRIDE_DEPTH_INPUT
 
-            // TODO: На самом деле шейдер не будет использовать буфер глубины от композера (он будет передан отдельно).
-            // Но postprocessing отказывается компилировать шейдер если убрать этот флаг или сделать параметр depth в
-            // шейдере условным через препроцессор.
-            attributes: EffectAttribute.DEPTH,
+${cloudsEffectShader}
 
-            blendFunction: BlendFunction.SET,
-        });
-    }
+void main(void) {
+    vec2 uv = gl_FragCoord.xy * viewportSizeInverse;
+    mainImage(vec4(0.0), uv, 0.0, gl_FragCoord);
+};
+`;
 
-    set inputDepthTexture(tx) {
-        this.uniforms.get("depthInputOverrideTexture").value = tx;
+class CloudsScene extends Scene {
+    constructor({ noiseTexture }) {
+        super();
+
+        this._material = new ShaderMaterial({
+            fragmentShader: cloudsRawShader,
+            uniforms: makeCloudsShaderUniforms({  })
+        })
+        // TODO
     }
 }
 
@@ -52,7 +45,6 @@ class CloudsMergeEffect extends Effect {
 export class UndersampledCloudsPass extends EffectPass {
     constructor({
         postCloudsEffects = [],
-        lowResEffects = [],
         camera,
         clock,
         noiseTexture,
@@ -65,27 +57,28 @@ export class UndersampledCloudsPass extends EffectPass {
 
         this.undersampling = undersampling;
 
-        this._cloudsEffect = new LowResolutionCloudsEffect({ camera, clock, noiseTexture });
         this._mergeEffect = mergeEffect;
 
-        this._sidechainComposer = new EffectComposer(
-            renderer,
-            {
-                depthBuffer: false,
-                frameBufferType: HalfFloatType,
-            }
-        );
-        this._sidechainComposer.autoRenderToScreen = false;
-        this._sidechainComposer.addPass(new EffectPass(camera, this._cloudsEffect, ...lowResEffects));
+        this._rt = new WebGLRenderTarget(undefined, undefined, { depth: false, magFilter: NearestFilter });
+    }
 
-        this._sz = new Vector2();
+    _ensureRenderTargetSize(fullWidth, fullHeight) {
+        const expectedWidth = Math.ceil(fullWidth / this.undersampling);
+        const expectedHeight = Math.ceil(fullHeight / this.undersampling);
+
+        if (this._rt.width !== expectedWidth || this._rt.height !== expectedHeight) {
+            console.log(`Resizing clouds RT from ${this._rt.width}x${this._rt.height} to ${expectedWidth}x${expectedHeight}`);
+            this._rt.setSize(expectedWidth, expectedHeight);
+        }
     }
 
     get cloudsUniforms() {
-        return this._cloudsEffect.uniforms;
+        // TODO
+        // return this._cloudsEffect.uniforms;
     }
 
     render(
+        /** @type {import("three").WebGLRenderer} */
         renderer,
         /** @type {import("three").WebGLRenderTarget} */
         inputBuffer,
@@ -93,20 +86,14 @@ export class UndersampledCloudsPass extends EffectPass {
         deltaTime,
         stencilTest,
     ) {
-        this._cloudsEffect.inputDepthTexture = inputBuffer.depthTexture;
+        // this._cloudsEffect.inputDepthTexture = inputBuffer.depthTexture;
 
-        this._sidechainComposer.setSize(
-            Math.ceil(inputBuffer.width / this.undersampling),
-            Math.ceil(inputBuffer.height / this.undersampling),
-            false,
-        );
+        this._ensureRenderTargetSize(inputBuffer.width, inputBuffer.height);
+        renderer.setRenderTarget(this._rt);
 
-        this._sidechainComposer.render(deltaTime);
+        // TODO: Render clouds
         
-        this._sidechainComposer.outputBuffer.texture.magFilter = NearestFilter;
-        this._mergeEffect.cloudsTexture = this._sidechainComposer.outputBuffer.texture;
-
-        renderer.setSize(outputBuffer.width, outputBuffer.height, false);
+        this._mergeEffect.cloudsTexture = this._rt.texture;
 
         super.render(renderer, inputBuffer, outputBuffer, deltaTime, stencilTest);
     }

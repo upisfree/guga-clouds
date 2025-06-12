@@ -44,7 +44,7 @@ class CloudsDemo {
   constructor(container) {
     this.container = container;
 
-    this.undersampling = 2;
+    this.undersampling = 16;
 
     this.geometryMultisampling = 8;
 

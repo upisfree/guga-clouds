@@ -2,7 +2,7 @@ import { Effect, EffectAttribute, EffectPass } from "postprocessing";
 import mergeShader from "./clouds-merge.frag.glsl?raw";
 import cloudsEffectShader from "./clouds-post.frag.glsl?raw";
 import postVertexShader from "./clouds-post.vertex.glsl?raw";
-import { DepthTexture, Mesh, NearestFilter, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Uniform, WebGLRenderTarget } from "three";
+import { ClampToEdgeWrapping, DepthTexture, Mesh, NearestFilter, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Uniform, WebGLRenderTarget } from "three";
 import { makeCloudsShaderUniforms } from "./clouds-uniforms";
 
 
@@ -12,25 +12,29 @@ const cloudsRawShader = `
 uniform float cameraNear;
 uniform float cameraFar;
 uniform sampler2D depthInputOverrideTexture;
+uniform int undersampling;
 
 ${cloudsEffectShader}
 
 void main(void) {
     vec2 uv = gl_FragCoord.xy * viewportSizeInverse;
+
     float depth = 0.0;
-    // TODO: Adjust iteration counts and coordinates scale to undersampling size
-    for (int i = -7; i < 8; ++i) {
-        for (int j = -7; j < 8; ++j) {
+    vec2 pixel_size = viewportSizeInverse / float(undersampling);
+    int end_index = undersampling / 2 + 1;
+    int start_index = -end_index;
+    for (int i = start_index; i < end_index; ++i) {
+        for (int j = start_index; j < end_index; ++j) {
             depth = max(
                 depth,
                 texture2D(
                     depthInputOverrideTexture,
-                    uv + viewportSizeInverse * vec2(ivec2(i, j)) / 16.0
+                    uv + vec2(ivec2(i, j)) * pixel_size
                 ).r
             );
         }
     }
-    //float depth = texture2D(depthInputOverrideTexture, uv).r;
+
     mainImage(vec4(0.0), uv, depth, gl_FragColor);
 }
 `;
@@ -68,6 +72,7 @@ class CloudsScene extends Scene {
                         ['depthInputOverrideTexture', new Uniform(null)],
                         ['cameraNear', new Uniform(camera.near)],
                         ['cameraFar', new Uniform(camera.far)],
+                        ["undersampling", new Uniform(16)],
                     ]),
                 }).entries()
             ].reduce((o, [n, u]) => Object.assign(o, { [n]: u }), {}),
@@ -99,6 +104,10 @@ class CloudsScene extends Scene {
 
     set inputDepthTexture(tx) {
         this._material.uniforms.depthInputOverrideTexture.value = tx;
+    }
+
+    set undersampling(val) {
+        this._material.uniforms.undersampling.value = Math.ceil(val);
     }
 
     resize(w, h) {
@@ -144,7 +153,10 @@ export class UndersampledCloudsPass extends EffectPass {
         this._mergeEffect = mergeEffect;
         this._cloudsScene = new CloudsScene({ noiseTexture, noiseTexture3d, camera, clock });
 
-        this._rt = new WebGLRenderTarget(undefined, undefined, { depth: true, magFilter: NearestFilter, depthTexture: new DepthTexture() });
+        const depthTexture = new DepthTexture();
+        depthTexture.wrapS = ClampToEdgeWrapping;
+        depthTexture.wrapT = ClampToEdgeWrapping;
+        this._rt = new WebGLRenderTarget(undefined, undefined, { depth: true, magFilter: NearestFilter, depthTexture });
     }
 
     _ensureRenderTargetSize(fullWidth, fullHeight) {
@@ -171,6 +183,7 @@ export class UndersampledCloudsPass extends EffectPass {
         deltaTime,
         stencilTest,
     ) {
+        this._cloudsScene.undersampling = this.undersampling;
         this._cloudsScene.inputDepthTexture = inputBuffer.depthTexture;
 
         this._ensureRenderTargetSize(inputBuffer.width, inputBuffer.height);

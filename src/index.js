@@ -25,6 +25,7 @@ import {
   SMAAEffect,
   SMAAPreset,
 } from 'postprocessing';
+import { TAAPass } from './lib/taa/TAAPass';
 import { makeUniformsProxy } from './clouds/uniforms-proxy';
 import { Wind } from './clouds/wind';
 import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
@@ -120,10 +121,13 @@ class CloudsDemo {
     this.composer.addPass(this._undersampledCloudsPass);
     this.updateUndersampling();
 
-    this.smaaPreset = SMAAPreset.MEDIUM;
-    this.smaaEffect = new SMAAEffect({ preset: this.smaaPreset });
-    this.smaaPass = new EffectPass(this.camera, this.smaaEffect);
-    this.composer.addPass(this.smaaPass);
+    // this.smaaPreset = SMAAPreset.MEDIUM;
+    // this.smaaEffect = new SMAAEffect({ preset: this.smaaPreset });
+    // this.smaaPass = new EffectPass(this.camera, this.smaaEffect);
+    // this.composer.addPass(this.smaaPass);
+
+    this.taaPass = new TAAPass(this.camera);
+    this.composer.addPass(this.taaPass);
 
     this.composer.addPass(new EffectPass(this.camera));
 
@@ -300,17 +304,17 @@ class CloudsDemo {
       max: 16,
       step: 1,
     }).on("change", () => this.updateUndersampling());
-    cloudsQualityFolder.addBinding(this, "smaaPreset", {
-      label: "SMAA preset",
-      options: { NONE: "NONE", ...SMAAPreset },
-    }).on("change", () => {
-      if (this.smaaPreset === "NONE") {
-        this.smaaPass.setEnabled(false);
-      } else {
-        this.smaaPass.setEnabled(true);
-        this.smaaEffect.applyPreset(this.smaaPreset);
-      }
-    });
+    // cloudsQualityFolder.addBinding(this, "smaaPreset", {
+    //   label: "SMAA preset",
+    //   options: { NONE: "NONE", ...SMAAPreset },
+    // }).on("change", () => {
+    //   if (this.smaaPreset === "NONE") {
+    //     this.smaaPass.setEnabled(false);
+    //   } else {
+    //     this.smaaPass.setEnabled(true);
+    //     this.smaaEffect.applyPreset(this.smaaPreset);
+    //   }
+    // });
 
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
     cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsScale", {

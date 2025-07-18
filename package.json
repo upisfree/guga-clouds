@@ -7,20 +7,23 @@
     "nanoid": "^3.3.8",
     "picocolors": "^1.1.1",
     "postcss": "^8.5.1",
+    "postprocessing": "^6.37.4",
     "rollup": "^4.34.6",
     "source-map-js": "^1.2.1",
     "spatial-controls": "^6.1.2",
-    "three": "^0.173.0",
+    "three": "^0.178.0",
     "tweakpane": "^4.0.5"
   },
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
     "prod": "vite build"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@tweakpane/core": "^2.0.5",
     "vite": "^6.1.0"
   }
 }

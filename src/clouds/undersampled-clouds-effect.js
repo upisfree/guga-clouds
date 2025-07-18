@@ -1,22 +1,40 @@
-import { Effect, EffectPass } from "postprocessing";
+import { Effect, EffectAttribute, EffectPass } from "postprocessing";
 import mergeShader from "./clouds-merge.frag.glsl?raw";
 import cloudsEffectShader from "./clouds-post.frag.glsl?raw";
 import postVertexShader from "./clouds-post.vertex.glsl?raw";
-import { Mesh, NearestFilter, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Uniform, WebGLRenderTarget } from "three";
+import { ClampToEdgeWrapping, DepthTexture, Mesh, NearestFilter, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Uniform, WebGLRenderTarget } from "three";
 import { makeCloudsShaderUniforms } from "./clouds-uniforms";
 
 
 const cloudsRawShader = `
 #define OVERRIDE_DEPTH_INPUT
+#define WRITE_CLOUDS_DEPTH
 uniform float cameraNear;
 uniform float cameraFar;
 uniform sampler2D depthInputOverrideTexture;
+uniform int undersampling;
 
 ${cloudsEffectShader}
 
 void main(void) {
     vec2 uv = gl_FragCoord.xy * viewportSizeInverse;
-    float depth = texture2D(depthInputOverrideTexture, uv).r;
+
+    float depth = 0.0;
+    vec2 pixel_size = viewportSizeInverse / float(undersampling);
+    int end_index = undersampling / 2 + 1;
+    int start_index = -end_index;
+    for (int i = start_index; i < end_index; ++i) {
+        for (int j = start_index; j < end_index; ++j) {
+            depth = max(
+                depth,
+                texture2D(
+                    depthInputOverrideTexture,
+                    uv + vec2(ivec2(i, j)) * pixel_size
+                ).r
+            );
+        }
+    }
+
     mainImage(vec4(0.0), uv, depth, gl_FragColor);
 }
 `;
@@ -54,9 +72,12 @@ class CloudsScene extends Scene {
                         ['depthInputOverrideTexture', new Uniform(null)],
                         ['cameraNear', new Uniform(camera.near)],
                         ['cameraFar', new Uniform(camera.far)],
+                        ["undersampling", new Uniform(16)],
                     ]),
                 }).entries()
             ].reduce((o, [n, u]) => Object.assign(o, { [n]: u }), {}),
+            // depthTest: false,
+            depthWrite: true,
         });
 
         this.add(new Mesh(new PlaneGeometry(2, 2), this._material));
@@ -85,6 +106,10 @@ class CloudsScene extends Scene {
         this._material.uniforms.depthInputOverrideTexture.value = tx;
     }
 
+    set undersampling(val) {
+        this._material.uniforms.undersampling.value = Math.ceil(val);
+    }
+
     resize(w, h) {
         this._material.uniforms.viewportSizeInverse.value.set(1 / w, 1 / h);
     }
@@ -95,12 +120,18 @@ class CloudsMergeEffect extends Effect {
         super("CloudsColorMerge", mergeShader, {
             uniforms: new Map([
                 ["cloudsTexture", new Uniform()],
+                ["cloudsDepthTexture", new Uniform()],
             ]),
+            attributes: EffectAttribute.DEPTH,
         });
     }
 
     set cloudsTexture(tx) {
         this.uniforms.get("cloudsTexture").value = tx;
+    }
+
+    set cloudsDepthTexture(tx) {
+        this.uniforms.get('cloudsDepthTexture').value = tx;
     }
 }
 
@@ -122,7 +153,10 @@ export class UndersampledCloudsPass extends EffectPass {
         this._mergeEffect = mergeEffect;
         this._cloudsScene = new CloudsScene({ noiseTexture, noiseTexture3d, camera, clock });
 
-        this._rt = new WebGLRenderTarget(undefined, undefined, { depth: false, magFilter: NearestFilter });
+        const depthTexture = new DepthTexture();
+        depthTexture.wrapS = ClampToEdgeWrapping;
+        depthTexture.wrapT = ClampToEdgeWrapping;
+        this._rt = new WebGLRenderTarget(undefined, undefined, { depth: true, magFilter: NearestFilter, depthTexture });
     }
 
     _ensureRenderTargetSize(fullWidth, fullHeight) {
@@ -149,13 +183,16 @@ export class UndersampledCloudsPass extends EffectPass {
         deltaTime,
         stencilTest,
     ) {
+        this._cloudsScene.undersampling = this.undersampling;
         this._cloudsScene.inputDepthTexture = inputBuffer.depthTexture;
 
         this._ensureRenderTargetSize(inputBuffer.width, inputBuffer.height);
         renderer.setRenderTarget(this._rt);
+        renderer.clear(true, true);
         renderer.render(this._cloudsScene, this._cloudsScene.camera);
 
         this._mergeEffect.cloudsTexture = this._rt.texture;
+        this._mergeEffect.cloudsDepthTexture = this._rt.depthTexture;
 
         super.render(renderer, inputBuffer, outputBuffer, deltaTime, stencilTest);
     }

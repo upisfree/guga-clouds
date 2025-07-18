@@ -176,6 +176,13 @@ float linearize_depth(float depth){
   return a + b / depth;
 }
 
+float logarithmize_depth(float depth) {
+  float a = cameraFar / (cameraFar - cameraNear);
+  float b = cameraFar * cameraNear / (cameraNear - cameraFar);
+  depth = b / (depth - a);
+  return log2(depth + 1.0) / log2(cameraFar + 1.0);
+}
+
 void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out vec4 outputColor)
 {
     // Integer screenspace coordinates for texelFetch calls
@@ -189,7 +196,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 
     vec2 frag_coord = gl_FragCoord.xy;
     frag_coord += vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5);
-    // Screenspace coordinates in range [(-1, -1), (1, 1)]
+    // Screenspace coordinates in range [(0, 0), (1, 1)]
     vec2 screen_offset = frag_coord * viewportSizeInverse;
 
     // The point in world space this pixel is looking at
@@ -238,6 +245,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
       ACCUMULATE_COLOR(fogColor, pow(fogTransparency, dist / 10.0));
     }
 
+#ifdef WRITE_CLOUDS_DEPTH
+    float clouds_start_dist = cameraFar;
+#endif
+
     while (dist < max_dist) {
         float d = get_cloud_distance(pos);
 
@@ -251,6 +262,12 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
           float step_transparency = pow(local_transparency * prev_transparency, (dist - prev_dist) / 10.0);
 
           ACCUMULATE_COLOR(local_color, step_transparency);
+
+#ifdef WRITE_CLOUDS_DEPTH
+          if (transparency < 0.8) {
+            clouds_start_dist = min(dist, clouds_start_dist);
+          }
+#endif
 
           if (transparency < transparencyThreshold) {
             break;
@@ -291,5 +308,15 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 #else
     outputColor.rgb = color_acc;
     outputColor.a = 1.0 - transparency;
+#endif
+
+#ifdef WRITE_CLOUDS_DEPTH
+  vec4 x = inverse(worldCameraUnprojectionMatrix)*vec4(worldCameraPosition + dir * clouds_start_dist, 1.0);
+  float clouds_depth = 0.5 + 0.5 * (x.z / x.w);
+#ifdef USE_LOGDEPTHBUF
+  clouds_depth = logarithmize_depth(clouds_depth);
+#endif
+
+  gl_FragDepth = clouds_depth;
 #endif
 }

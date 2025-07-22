@@ -45,7 +45,7 @@ class CloudsScene extends Scene {
      *  noiseTexture: import('three').Texture,
      *  noiseTexture3d: import('three').Texture,
      *  camera: import('three').PerspectiveCamera,
-     * }} param0 
+     * }} param0
      */
     constructor({
         noiseTexture,
@@ -72,7 +72,7 @@ class CloudsScene extends Scene {
                         ['depthInputOverrideTexture', new Uniform(null)],
                         ['cameraNear', new Uniform(camera.near)],
                         ['cameraFar', new Uniform(camera.far)],
-                        ["undersampling", new Uniform(16)],
+                        ['undersampling', new Uniform(16)],
                     ]),
                 }).entries()
             ].reduce((o, [n, u]) => Object.assign(o, { [n]: u }), {}),

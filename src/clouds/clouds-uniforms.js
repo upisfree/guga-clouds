@@ -15,6 +15,7 @@ export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUn
         ['noiseTexture3d', new Uniform(noiseTexture3d)],
 
         ['ditherDepth', new Uniform(1.0)],
+        ['directionDitherDepth', new Uniform(1.0)],
         ['densityThreshold', new Uniform(4.0)],
         ['cloudsScale', new Uniform(120.0)],
         ['cloudsAltitude', new Uniform(-369.0)],

@@ -13,6 +13,7 @@ uniform float timeSeconds;
 uniform float densityThreshold;
 uniform float transparencyThreshold;
 uniform float ditherDepth;
+uniform float directionDitherDepth;
 uniform float cloudsScale;
 uniform float maxRMDistance;
 uniform float minRMStep;
@@ -185,9 +186,6 @@ float logarithmize_depth(float depth) {
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out vec4 outputColor)
 {
-    // Integer screenspace coordinates for texelFetch calls
-    ivec2 texelCoords = ivec2(gl_FragCoord.xy);
-
     float depthSample = depth;
 
 #ifdef USE_LOGDEPTHBUF
@@ -195,7 +193,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 #endif
 
     vec2 frag_coord = gl_FragCoord.xy;
-    frag_coord += vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5);
+    frag_coord += (vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5)) * directionDitherDepth;
     // Screenspace coordinates in range [(0, 0), (1, 1)]
     vec2 screen_offset = frag_coord * viewportSizeInverse;
 

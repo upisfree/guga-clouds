@@ -294,6 +294,11 @@ class CloudsDemo {
       min: 0.0,
       max: 1.0,
     });
+    cloudsQualityFolder.addBinding(this.uniformProxy, "directionDitherDepth", {
+      label: "Dir. dithering depth",
+      min: 0.0,
+      max: 1.0,
+    });
     cloudsQualityFolder.addBinding(this, "undersampling", {
       label: "Undersampling",
       min: 0,

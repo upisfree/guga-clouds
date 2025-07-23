@@ -180,6 +180,11 @@ class CloudsDemo {
       max: 200.0,
       // step: 0.5,
     });
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsHorizontalOffset", {
+      label: "Horizontal offset",
+      min: -1000,
+      max: 1000,
+    });
     cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsAltitude", {
       label: "Altitude",
       min: -1000,

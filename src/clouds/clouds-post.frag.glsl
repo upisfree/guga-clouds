@@ -18,6 +18,7 @@ uniform float cloudsScale;
 uniform float maxRMDistance;
 uniform float minRMStep;
 uniform float rmStepScale;
+uniform vec2 cloudsHorizontalOffset;
 uniform float cloudsAltitude;
 uniform float cloudsAltitudeShift;
 uniform float cloudsFloorAltitude;
@@ -150,7 +151,7 @@ float get_cloud_distance(vec3 p) {
   edgeSmoothing += smoothstep(ceilingAltitude - cloudsCeilSmoothingRange, ceilingAltitude, p.y);
 
   // Offset clouds field along vertical axis, scale along all axes
-  p.y -= cloudsAltitude + cloudsAltitudeShift;
+  p += vec3(cloudsHorizontalOffset.x, -cloudsAltitude - cloudsAltitudeShift, cloudsHorizontalOffset.y);
   p /= cloudsScale;
 
   // Change clouds density depending on altitude

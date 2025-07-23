@@ -8,6 +8,7 @@
     "picocolors": "^1.1.1",
     "postcss": "^8.5.1",
     "postprocessing": "^6.37.4",
+    "realism-effects": "github:upisfree/realism-effects#clouds",
     "rollup": "^4.34.6",
     "source-map-js": "^1.2.1",
     "spatial-controls": "^6.1.2",

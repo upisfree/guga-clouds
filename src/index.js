@@ -25,12 +25,12 @@ import {
   SMAAEffect,
   SMAAPreset,
 } from 'postprocessing';
-import { TAAPass } from './lib/taa/TAAPass';
 import { makeUniformsProxy } from './clouds/uniforms-proxy';
 import { Wind } from './clouds/wind';
 import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
 import { UndersampledCloudsPass } from './clouds/undersampled-clouds-effect';
 import { createNoiseTexture3D } from './clouds/noise-texture-3d';
+import { TRAAEffect, VelocityDepthNormalPass, TAAPass } from 'realism-effects';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -126,10 +126,20 @@ class CloudsDemo {
     // this.smaaPass = new EffectPass(this.camera, this.smaaEffect);
     // this.composer.addPass(this.smaaPass);
 
-    this.taaPass = new TAAPass(this.camera);
-    this.composer.addPass(this.taaPass);
+    // taa
+    // this.taaPass = new TAAPass(this.camera);
+    // this.composer.addPass(this.taaPass);
 
-    this.composer.addPass(new EffectPass(this.camera));
+    // traa
+    this.velocityDepthNormalPass = new VelocityDepthNormalPass(this.scene, this.camera);
+    this.composer.addPass(this.velocityDepthNormalPass);
+
+    this.traaEffect = new TRAAEffect(this.scene, this.camera, this.velocityDepthNormalPass, {
+      fullAccumulate: true
+    });
+
+    this.traaPass = new EffectPass(this.camera, this.traaEffect);
+    this.composer.addPass(this.traaPass);
 
     this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]);
     this.wind = new Wind(this.uniformProxy, this.clock);

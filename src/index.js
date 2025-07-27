@@ -36,6 +36,7 @@ const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.minFilter = LinearFilter;
   tx.wrapS = RepeatWrapping;
   tx.wrapT = RepeatWrapping;
+  tx.flipY = false;
 });
 
 const noiseTexture3d = createNoiseTexture3D({ size: 128 });
@@ -44,7 +45,7 @@ class CloudsDemo {
   constructor(container) {
     this.container = container;
 
-    this.undersampling = 16;
+    this.undersampling = 0;
 
     this.geometryMultisampling = 8;
 

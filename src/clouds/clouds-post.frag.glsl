@@ -17,7 +17,9 @@ uniform float directionDitherDepth;
 uniform float cloudsScale;
 uniform float maxRMDistance;
 uniform float minRMStep;
+uniform float minRMStepPerDistance;
 uniform float rmStepScale;
+uniform float rmStepScalePerDistance;
 uniform vec2 cloudsHorizontalOffset;
 uniform float cloudsAltitude;
 uniform float cloudsAltitudeShift;
@@ -277,9 +279,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
           prev_transparency = 1.0;
         }
 
-        d *= rmStepScale;
+        d *= (rmStepScale + rmStepScalePerDistance * dist);
         d = min(d, max_dist - dist - 0.01);
-        d = max(d, minRMStep);
+        d = max(d, minRMStep + minRMStepPerDistance * dist);
         d *= 1.0 + ditherDepth * random(screen_offset * dist);
         prev_dist = dist;
         dist += d;

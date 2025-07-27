@@ -289,10 +289,20 @@ class CloudsDemo {
       min: 0.04,
       max: 20.0,
     });
+    cloudsQualityFolder.addBinding(this.uniformProxy, "minRMStepPerDistance", {
+      label: "Min step/D",
+      min: 0.0,
+      max: 0.05,
+    });
     cloudsQualityFolder.addBinding(this.uniformProxy, "rmStepScale", {
       label: "Step size",
       min: 0.2,
       max: 4.0,
+    });
+    cloudsQualityFolder.addBinding(this.uniformProxy, "rmStepScalePerDistance", {
+      label: "Step size/D",
+      min: 0.0,
+      max: 0.001,
     });
     cloudsQualityFolder.addBinding(this.uniformProxy, "ditherDepth", {
       label: "Dithering depth",

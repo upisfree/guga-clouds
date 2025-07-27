@@ -28,7 +28,9 @@ export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUn
         ['cloudsTransitionalLayerScale', new Uniform(2.5)],
         ['maxRMDistance', new Uniform(10000.0)],
         ['minRMStep', new Uniform(10.0)],
+        ['minRMStepPerDistance', new Uniform(0.0)],
         ['rmStepScale', new Uniform(1.0)],
+        ['rmStepScalePerDistance', new Uniform(0.0)],
         ['transparencyThreshold', new Uniform(0.3)],
 
         ['detailsScale', new Uniform(36.0)],

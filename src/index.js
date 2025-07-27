@@ -127,7 +127,7 @@ class CloudsDemo {
 
     this.composer.addPass(new EffectPass(this.camera));
 
-    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]);
+    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, ...this._undersampledCloudsPass.allCloudsUniforms]);
     this.wind = new Wind(this.uniformProxy, this.clock);
     this.camera.position.set(0, 50, 100);
     this.camera.rotation.set(
@@ -355,7 +355,7 @@ class CloudsDemo {
     });
     fogFolder.addBinding(this.uniformProxy, "fogTransparency", {
       label: "Transparency",
-      min: 0.99,
+      min: 0.8,
       max: 0.9999,
     });
 

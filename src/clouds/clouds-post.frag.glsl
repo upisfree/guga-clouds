@@ -277,12 +277,6 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
           prev_transparency = 1.0;
         }
 
-        if (fogEnabled) {
-          float fog_dst = min(dist, max_dist) - prev_dist;
-          float fog_step_transparency = pow(fogTransparency, fog_dst / 10.0);
-          ACCUMULATE_COLOR(fogColor, fog_step_transparency);
-        }
-
         d *= rmStepScale;
         d = min(d, max_dist - dist - 0.01);
         d = max(d, minRMStep);
@@ -290,6 +284,12 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
         prev_dist = dist;
         dist += d;
         pos += dir * d;
+
+        if (fogEnabled) {
+          float fog_dst = min(dist, max_dist) - prev_dist;
+          float fog_step_transparency = pow(fogTransparency, fog_dst / 10.0);
+          ACCUMULATE_COLOR(fogColor, fog_step_transparency);
+        }
     }
 
     if (fogEnabled) {

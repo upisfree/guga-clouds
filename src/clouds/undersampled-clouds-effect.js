@@ -118,10 +118,12 @@ class CloudsScene extends Scene {
 class CloudsMergeEffect extends Effect {
     constructor() {
         super("CloudsColorMerge", mergeShader, {
-            uniforms: new Map([
-                ["cloudsTexture", new Uniform()],
-                ["cloudsDepthTexture", new Uniform()],
-            ]),
+            uniforms: makeCloudsShaderUniforms({
+                extraUniforms: new Map([
+                    ["cloudsTexture", new Uniform()],
+                    ["cloudsDepthTexture", new Uniform()],
+                ]),
+            }),
             attributes: EffectAttribute.DEPTH,
         });
     }
@@ -170,8 +172,8 @@ export class UndersampledCloudsPass extends EffectPass {
         }
     }
 
-    get cloudsUniforms() {
-        return this._cloudsScene.cloudsUniforms;
+    get allCloudsUniforms() {
+        return [this._cloudsScene.cloudsUniforms, this._mergeEffect.uniforms];
     }
 
     render(

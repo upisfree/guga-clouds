@@ -350,7 +350,7 @@ class CloudsDemo {
     });
     cloudsDetailsFolder.addBinding(this.wind, "detailsWindChangeSpeed", {
       label: "Wind change speed",
-      min: 0.05,
+      min: 0.00,
       max: 1.0,
     });
 
@@ -365,8 +365,9 @@ class CloudsDemo {
     });
     fogFolder.addBinding(this.uniformProxy, "fogTransparency", {
       label: "Transparency",
-      min: 0.8,
-      max: 0.9999,
+      min: 0.9,
+      max: 0.9999999999,
+      step: 0.000000001,
     });
 
     const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });

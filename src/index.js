@@ -30,6 +30,7 @@ import { Wind } from './clouds/wind';
 import { DirectCloudsEffect } from './clouds/direct-clouds-effect';
 import { UndersampledCloudsPass } from './clouds/undersampled-clouds-effect';
 import { createNoiseTexture3D } from './clouds/noise-texture-3d';
+import { label } from 'three/tsl';
 
 const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.magFilter = LinearFilter;
@@ -331,6 +332,12 @@ class CloudsDemo {
         this.smaaPass.setEnabled(true);
         this.smaaEffect.applyPreset(this.smaaPreset);
       }
+    });
+
+    cloudsQualityFolder.addBinding(this.uniformProxy, "depthWriteTransparencyThreshold", {
+      label: "Depth write α",
+      min: 0.8,
+      max: 0.9999,
     });
 
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });

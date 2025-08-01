@@ -55,6 +55,9 @@ export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUn
 
         ['sunDirection', new Uniform(new Vector3(1, 1, 1).normalize())],
         ['sunCastDistance', new Uniform(20.0)],
+
+        ['depthWriteTransparencyThreshold', new Uniform(0.8)],
+
         ...extraUniforms.entries(),
     ]);
 }

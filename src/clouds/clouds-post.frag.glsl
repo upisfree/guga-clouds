@@ -53,6 +53,8 @@ uniform sampler3D noiseTexture3d;
 uniform vec3 sunDirection;
 uniform float sunCastDistance;
 
+uniform float depthWriteTransparencyThreshold;
+
 // iq's noise
 float pn(vec3 x)
 {
@@ -265,7 +267,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
           ACCUMULATE_COLOR(local_color, step_transparency);
 
 #ifdef WRITE_CLOUDS_DEPTH
-          if (transparency < 0.8) {
+          if (transparency < depthWriteTransparencyThreshold) {
             clouds_start_dist = min(dist, clouds_start_dist);
           }
 #endif

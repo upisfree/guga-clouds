@@ -268,7 +268,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 
 #ifdef WRITE_CLOUDS_DEPTH
           if (transparency < depthWriteTransparencyThreshold) {
-            clouds_start_dist = min(dist, clouds_start_dist);
+            clouds_start_dist = min((dist + prev_dist) * 0.5, clouds_start_dist);
           }
 #endif
 
@@ -282,9 +282,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
         }
 
         d *= (rmStepScale + rmStepScalePerDistance * dist);
+        d *= 1.0 + ditherDepth * random(screen_offset * dist);
         d = min(d, max_dist - dist - 0.01);
         d = max(d, minRMStep + minRMStepPerDistance * dist);
-        d *= 1.0 + ditherDepth * random(screen_offset * dist);
         prev_dist = dist;
         dist += d;
         pos += dir * d;

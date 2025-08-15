@@ -4,7 +4,7 @@ import { Uniform, Vector2, Vector3, Matrix4, Color } from "three";
  * @param {{noiseTexture: import("three").Texture, extraUniforms: Map<string, import("three").Uniform>}} param0 
  * @returns {Map<string, import("three").Uniform>}
  */
-export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUniforms = new Map() }) {
+export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, ditherTexture, extraUniforms = new Map() }) {
     return new Map([
         ['worldCameraPosition', new Uniform(new Vector3())], // TODO: можно забирать напрямую с камеры
         ['viewportSizeInverse', new Uniform(new Vector2(1, 1))],
@@ -13,6 +13,7 @@ export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUn
 
         ['noiseTexture', new Uniform(noiseTexture)],
         ['noiseTexture3d', new Uniform(noiseTexture3d)],
+        ['ditherTexture', new Uniform(ditherTexture)],
 
         ['ditherDepth', new Uniform(1.0)],
         ['directionDitherDepth', new Uniform(1.0)],

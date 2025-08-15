@@ -48,6 +48,8 @@ uniform bool fogEnabled;
 
 uniform sampler2D noiseTexture;
 
+uniform sampler2D ditherTexture;
+
 uniform sampler3D noiseTexture3d;
 
 uniform vec3 sunDirection;
@@ -69,11 +71,6 @@ float pn(vec3 x)
 float fpn(vec3 p)
 {
    return pn(p*.06125)*.5 + pn(p*.125)*.25 + pn(p*.25)*.125;
-}
-
-// implementation found at: lumina.sourceforge.net/Tutorials/Noise.html
-float random(vec2 co) {
-  return fract(sin(dot(co * 0.123, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 #if 0
@@ -189,6 +186,19 @@ float logarithmize_depth(float depth) {
   return log2(depth + 1.0) / log2(cameraFar + 1.0);
 }
 
+vec4 read_dither() {
+  vec2 uv = gl_FragCoord.xy / 128.0;
+#if 0
+  uv += fract(sin(timeSeconds * 1231232.4324));
+#endif
+
+#if 1
+  uv += fract(sin(123432.0 * (worldCameraUnprojectionMatrix[0][0] + worldCameraUnprojectionMatrix[1][1] + worldCameraUnprojectionMatrix[2][2])));
+#endif
+
+  return texture2D(ditherTexture, uv);
+}
+
 void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out vec4 outputColor)
 {
     float depthSample = depth;
@@ -197,8 +207,11 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
   depthSample = linearize_depth(depthSample);
 #endif
 
+    vec4 ditherSample = read_dither();
+#define DITHER (ditherSample = ditherSample.wxyz)
+
     vec2 frag_coord = gl_FragCoord.xy;
-    frag_coord += (vec2(random(frag_coord.xy * timeSeconds), random(frag_coord.yx * timeSeconds)) - vec2(0.5)) * directionDitherDepth;
+    frag_coord += (DITHER.xy - vec2(0.5)) * directionDitherDepth;
     // Screenspace coordinates in range [(0, 0), (1, 1)]
     vec2 screen_offset = frag_coord * viewportSizeInverse;
 
@@ -231,7 +244,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
       dist = max(0.0, min(limit_distances.x, limit_distances.y));
     }
 
-    dist += 1.0 + ditherDepth * random(screen_offset + fract(timeSeconds));
+    dist += 1.0 + ditherDepth * DITHER.x;
     pos += dist * dir;
 
     // Cloud transparency accumulator, transparency of previous step, distance at start of previous step
@@ -256,7 +269,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
         float d = get_cloud_distance(pos);
 
         if (d < densityThreshold) {
-          float d_sun = get_cloud_distance(pos + sunDirection * sunCastDistance * (1.0 + ditherDepth * random(d * screen_offset.yx + fract(timeSeconds))));
+          float d_sun = get_cloud_distance(pos + sunDirection * sunCastDistance * (1.0 + ditherDepth * DITHER.x));
           float k_sun = clamp((d_sun - d), 0.0, 1.0);
 
           float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));
@@ -284,7 +297,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
         d *= (rmStepScale + rmStepScalePerDistance * dist);
         d = min(d, max_dist - dist - 0.01);
         d = max(d, minRMStep + minRMStepPerDistance * dist);
-        d *= 1.0 + ditherDepth * random(screen_offset * dist);
+        d *= 1.0 + ditherDepth * DITHER.x;
         prev_dist = dist;
         dist += d;
         pos += dir * d;

@@ -17,6 +17,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
 import noiseTextureUrl from '../assets/noise.png?url';
+import ditherTextureUrl from '../assets/dither.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import {
   EffectComposer,
@@ -37,6 +38,14 @@ const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.minFilter = LinearFilter;
   tx.wrapS = RepeatWrapping;
   tx.wrapT = RepeatWrapping;
+  tx.flipY = false;
+});
+
+const ditherTexture = new TextureLoader().load(ditherTextureUrl, tx => {
+  tx.magFilter = NearestFilter;
+  tx.minFilter = NearestFilter;
+  tx.wrapS = RepeatWrapping;
+  tx.wrapT = RepeatWrapping;
 });
 
 const noiseTexture3d = createNoiseTexture3D({ size: 128 });
@@ -45,7 +54,7 @@ class CloudsDemo {
   constructor(container) {
     this.container = container;
 
-    this.undersampling = 16;
+    this.undersampling = 0;
 
     this.geometryMultisampling = 8;
 
@@ -100,6 +109,7 @@ class CloudsDemo {
       clock: this.clock,
       noiseTexture,
       noiseTexture3d,
+      ditherTexture,
     });
 
     this.composer = new EffectComposer(this.renderer, {
@@ -114,6 +124,7 @@ class CloudsDemo {
       clock: this.clock,
       noiseTexture,
       noiseTexture3d,
+      ditherTexture,
       undersampling: 16,
       renderer: this.renderer,
     });
@@ -141,7 +152,7 @@ class CloudsDemo {
     this.traaPass = new EffectPass(this.camera, this.traaEffect);
     this.composer.addPass(this.traaPass);
 
-    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, this._undersampledCloudsPass.cloudsUniforms]);
+    this.uniformProxy = makeUniformsProxy([this.cloudsEffect.uniforms, ...this._undersampledCloudsPass.allCloudsUniforms]);
     this.wind = new Wind(this.uniformProxy, this.clock);
     this.camera.position.set(0, 50, 100);
     this.camera.rotation.set(
@@ -193,6 +204,11 @@ class CloudsDemo {
       min: 1.0,
       max: 200.0,
       // step: 0.5,
+    });
+    cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsHorizontalOffset", {
+      label: "Horizontal offset",
+      min: -1000,
+      max: 1000,
     });
     cloudsShapeFolder.addBinding(this.uniformProxy, "cloudsAltitude", {
       label: "Altitude",
@@ -298,13 +314,28 @@ class CloudsDemo {
       min: 0.04,
       max: 20.0,
     });
+    cloudsQualityFolder.addBinding(this.uniformProxy, "minRMStepPerDistance", {
+      label: "Min step/D",
+      min: 0.0,
+      max: 0.05,
+    });
     cloudsQualityFolder.addBinding(this.uniformProxy, "rmStepScale", {
       label: "Step size",
       min: 0.2,
       max: 4.0,
     });
+    cloudsQualityFolder.addBinding(this.uniformProxy, "rmStepScalePerDistance", {
+      label: "Step size/D",
+      min: 0.0,
+      max: 0.001,
+    });
     cloudsQualityFolder.addBinding(this.uniformProxy, "ditherDepth", {
       label: "Dithering depth",
+      min: 0.0,
+      max: 1.0,
+    });
+    cloudsQualityFolder.addBinding(this.uniformProxy, "directionDitherDepth", {
+      label: "Dir. dithering depth",
       min: 0.0,
       max: 1.0,
     });
@@ -326,6 +357,12 @@ class CloudsDemo {
     //   }
     // });
 
+    cloudsQualityFolder.addBinding(this.uniformProxy, "depthWriteTransparencyThreshold", {
+      label: "Depth write α",
+      min: 0.8,
+      max: 0.9999,
+    });
+
     const cloudsDetailsFolder = cloudsFolder.addFolder({ title: "Details" });
     cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsScale", {
       label: "Scale",
@@ -344,7 +381,7 @@ class CloudsDemo {
     });
     cloudsDetailsFolder.addBinding(this.wind, "detailsWindChangeSpeed", {
       label: "Wind change speed",
-      min: 0.05,
+      min: 0.00,
       max: 1.0,
     });
 
@@ -359,8 +396,9 @@ class CloudsDemo {
     });
     fogFolder.addBinding(this.uniformProxy, "fogTransparency", {
       label: "Transparency",
-      min: 0.99,
-      max: 0.9999,
+      min: 0.9,
+      max: 0.9999999999,
+      step: 0.000000001,
     });
 
     const helpersFolder = this.pane.addFolder({ title: "Helpers", expanded: false });

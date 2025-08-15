@@ -10,10 +10,11 @@ export class BaseCloudsEffect extends Effect {
         clock,
         noiseTexture,
         noiseTexture3d,
+        ditherTexture,
         ...extraSettings
     }) {
         super(name, fragmentShader, {
-            uniforms: makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, extraUniforms: uniforms }),
+            uniforms: makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, ditherTexture, extraUniforms: uniforms }),
             defines,
             ...extraSettings,
         });

@@ -23,9 +23,27 @@ function noise1(x, y, z) {
     return n;
 }
 
+function noise2_x(x, y, z) {
+    const n = noise1(x, y, z);
+    const nn = noise1(x - 1.0, y, z);
+    return (1 - x) * n + x * nn;
+}
+
+function noise2_xy(x, y, z) {
+    const n = noise2_x(x, y, z);
+    const nn = noise2_x(x, y - 1.0, z);
+    return (1 - y) * n + y * nn;
+}
+
+function noise2_xyz(x, y, z) {
+    const n = noise2_xy(x, y, z);
+    const nn = noise2_xy(x, y, z - 1.0);
+    return (1 - z) * n + z * nn;
+}
+
 const rangeMin = -6, rangeMax = 6;
 
-export function createNoiseTexture3D({ size, noiseFn = noise1 }) {
+export function createNoiseTexture3D({ size, noiseFn = noise2_xyz }) {
     const ab = new Uint8Array(size * size * size);
 
     let i = 0;

@@ -282,9 +282,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
         }
 
         d *= (rmStepScale + rmStepScalePerDistance * dist);
-        d *= 1.0 + ditherDepth * random(screen_offset * dist);
         d = min(d, max_dist - dist - 0.01);
         d = max(d, minRMStep + minRMStepPerDistance * dist);
+        d *= 1.0 - 0.5 * ditherDepth * random(screen_offset * dist);
         prev_dist = dist;
         dist += d;
         pos += dir * d;

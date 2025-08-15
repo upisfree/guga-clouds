@@ -371,6 +371,16 @@ class CloudsDemo {
       min: 0.00,
       max: 1.0,
     });
+    cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsMaxDistance", {
+      label: "Max. dist",
+      min: 100,
+      max: 10000,
+    });
+    cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsMaxDistanceTransition", {
+      label: "M.dist. trans.",
+      min: 0,
+      max: 1000,
+    });
 
     const fogFolder = this.pane.addFolder({ title: "Fog", expanded: false });
 

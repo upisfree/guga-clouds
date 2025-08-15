@@ -38,6 +38,9 @@ export function makeCloudsShaderUniforms({ noiseTexture, noiseTexture3d, ditherT
         ['detailsIntensity', new Uniform(1.39)],
         ['detailsOffset', new Uniform(new Vector2())],
 
+        ['detailsMaxDistance', new Uniform(2000)],
+        ['detailsMaxDistanceTransition', new Uniform(200)],
+
         // TODO: проименовать цвета, чтобы они отражали их значение
         // TODO: вынести цвета отсюда повыше, когда настрою чистовые
         ['colorLowDensity', new Uniform(new Color().setRGB(0.874509804, 0.874509804, 0.796078431))], // #dfdfcb

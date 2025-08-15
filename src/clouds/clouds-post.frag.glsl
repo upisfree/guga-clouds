@@ -42,6 +42,9 @@ uniform float detailsScale;
 uniform float detailsIntensity;
 uniform vec3 detailsOffset;
 
+uniform float detailsMaxDistance;
+uniform float detailsMaxDistanceTransition;
+
 uniform vec3 fogColor;
 uniform float fogTransparency;
 uniform bool fogEnabled;
@@ -145,7 +148,7 @@ float SpiralNoise3D(vec3 p) {
 // Returns a value correlating with distance towards a surface of a cloud from fiven point in world space.
 // Negative value is returned for points inside the cloud, positive for points outside.
 // This is similar to Signed Distance Field (SDF), but the value does not (or does it?) represent exact distance to the surface.
-float get_cloud_distance(vec3 p) {
+float get_cloud_distance(vec3 p, float distance) {
   float floorAltitude = cloudsAltitude - cloudsFloorAltitude;
   float ceilingAltitude = cloudsAltitude + cloudsCeilAltitude;
   float edgeSmoothing = 1.0 - smoothstep(floorAltitude, floorAltitude + cloudsFloorSmoothingRange, p.y);
@@ -164,7 +167,8 @@ float get_cloud_distance(vec3 p) {
   // final -= SpiralNoise3D(p*49.0 + vec3(timeSeconds))*0.0625*0.125; // small scale noise for variation
 
   // Add texture-based noise
-  final += detailsIntensity * fpn(p * detailsScale + detailsOffset);
+  float detailsDistanceScale = (1.0 - smoothstep(detailsMaxDistance, detailsMaxDistance + detailsMaxDistanceTransition, distance));
+  final += detailsDistanceScale * detailsIntensity * fpn(p * detailsScale + detailsOffset);
 
   // scale result back, so it's closer to distance to cloud surface, 0.326 - magic number from the original shader.
   return final * cloudsScale * 0.326;
@@ -266,10 +270,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 #endif
 
     while (dist < max_dist) {
-        float d = get_cloud_distance(pos);
+        float d = get_cloud_distance(pos, dist);
 
         if (d < densityThreshold) {
-          float d_sun = get_cloud_distance(pos + sunDirection * sunCastDistance * (1.0 + ditherDepth * DITHER.x));
+          float d_sun = get_cloud_distance(pos + sunDirection * sunCastDistance * (1.0 + ditherDepth * DITHER.x), dist);
           float k_sun = clamp((d_sun - d), 0.0, 1.0);
 
           float local_transparency = mix(alpha1, alpha2, smoothstep(densityThreshold, densityThreshold - densityAlphaGradientLength, d));

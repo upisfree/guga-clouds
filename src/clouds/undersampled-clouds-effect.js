@@ -50,6 +50,7 @@ class CloudsScene extends Scene {
     constructor({
         noiseTexture,
         noiseTexture3d,
+        ditherTexture,
         camera,
         clock,
     }) {
@@ -68,6 +69,7 @@ class CloudsScene extends Scene {
                 ...makeCloudsShaderUniforms({
                     noiseTexture,
                     noiseTexture3d,
+                    ditherTexture,
                     extraUniforms: new Map([
                         ['depthInputOverrideTexture', new Uniform(null)],
                         ['cameraNear', new Uniform(camera.near)],
@@ -144,6 +146,7 @@ export class UndersampledCloudsPass extends EffectPass {
         clock,
         noiseTexture,
         noiseTexture3d,
+        ditherTexture,
         undersampling,
     }) {
         const mergeEffect = new CloudsMergeEffect();
@@ -153,7 +156,7 @@ export class UndersampledCloudsPass extends EffectPass {
         this.undersampling = undersampling;
 
         this._mergeEffect = mergeEffect;
-        this._cloudsScene = new CloudsScene({ noiseTexture, noiseTexture3d, camera, clock });
+        this._cloudsScene = new CloudsScene({ noiseTexture, noiseTexture3d, ditherTexture, camera, clock });
 
         const depthTexture = new DepthTexture();
         depthTexture.wrapS = ClampToEdgeWrapping;

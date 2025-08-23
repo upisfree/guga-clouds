@@ -17,6 +17,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { ControlMode, PointerBehaviour, SpatialControls } from 'spatial-controls';
 import { Pane } from 'tweakpane';
 import noiseTextureUrl from '../assets/noise.png?url';
+import ditherTextureUrl from '../assets/dither.png?url';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import {
   EffectComposer,
@@ -38,6 +39,13 @@ const noiseTexture = new TextureLoader().load(noiseTextureUrl, tx => {
   tx.wrapS = RepeatWrapping;
   tx.wrapT = RepeatWrapping;
   tx.flipY = false;
+});
+
+const ditherTexture = new TextureLoader().load(ditherTextureUrl, tx => {
+  tx.magFilter = NearestFilter;
+  tx.minFilter = NearestFilter;
+  tx.wrapS = RepeatWrapping;
+  tx.wrapT = RepeatWrapping;
 });
 
 const noiseTexture3d = createNoiseTexture3D({ size: 128 });
@@ -101,6 +109,7 @@ class CloudsDemo {
       clock: this.clock,
       noiseTexture,
       noiseTexture3d,
+      ditherTexture,
     });
 
     this.composer = new EffectComposer(this.renderer, {
@@ -115,6 +124,7 @@ class CloudsDemo {
       clock: this.clock,
       noiseTexture,
       noiseTexture3d,
+      ditherTexture,
       undersampling: 16,
       renderer: this.renderer,
     });
@@ -360,6 +370,16 @@ class CloudsDemo {
       label: "Wind change speed",
       min: 0.00,
       max: 1.0,
+    });
+    cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsMaxDistance", {
+      label: "Max. dist",
+      min: 100,
+      max: 10000,
+    });
+    cloudsDetailsFolder.addBinding(this.uniformProxy, "detailsMaxDistanceTransition", {
+      label: "M.dist. trans.",
+      min: 0,
+      max: 1000,
     });
 
     const fogFolder = this.pane.addFolder({ title: "Fog", expanded: false });

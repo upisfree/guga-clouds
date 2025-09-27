@@ -36772,7 +36772,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 {
     float depthSample = depth;
 
-#ifdef USE_LOGDEPTHBUF
+#ifdef USE_LOGARITHMIC_DEPTH_BUFFER
   depthSample = linearize_depth(depthSample);
 #endif
 
@@ -36898,7 +36898,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 #ifdef WRITE_CLOUDS_DEPTH
   vec4 x = inverse(worldCameraUnprojectionMatrix)*vec4(worldCameraPosition + dir * clouds_start_dist, 1.0);
   float clouds_depth = 0.5 + 0.5 * (x.z / x.w);
-#ifdef USE_LOGDEPTHBUF
+#ifdef USE_LOGARITHMIC_DEPTH_BUFFER
   clouds_depth = logarithmize_depth(clouds_depth);
 #endif
 
@@ -37026,7 +37026,7 @@ float linearize_depth(float depth){
 void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out vec4 outputColor) {
     float depthSample = depth;
 
-#ifdef USE_LOGDEPTHBUF
+#ifdef USE_LOGARITHMIC_DEPTH_BUFFER
   depthSample = linearize_depth(depthSample);
 #endif
 

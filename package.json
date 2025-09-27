@@ -11,7 +11,7 @@
     "rollup": "^4.34.6",
     "source-map-js": "^1.2.1",
     "spatial-controls": "^6.1.2",
-    "three": "^0.178.0",
+    "three": "^0.180.0",
     "tweakpane": "^4.0.5"
   },
   "scripts": {

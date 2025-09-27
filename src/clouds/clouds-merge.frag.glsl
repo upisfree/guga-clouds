@@ -18,7 +18,7 @@ float linearize_depth(float depth){
 void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out vec4 outputColor) {
     float depthSample = depth;
 
-#ifdef USE_LOGDEPTHBUF
+#ifdef USE_LOGARITHMIC_DEPTH_BUFFER
   depthSample = linearize_depth(depthSample);
 #endif
 

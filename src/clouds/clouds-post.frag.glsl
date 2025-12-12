@@ -183,13 +183,6 @@ float linearize_depth(float depth){
   return a + b / depth;
 }
 
-float logarithmize_depth(float depth) {
-  float a = cameraFar / (cameraFar - cameraNear);
-  float b = cameraFar * cameraNear / (cameraNear - cameraFar);
-  depth = b / (depth - a);
-  return log2(depth + 1.0) / log2(cameraFar + 1.0);
-}
-
 vec4 read_dither() {
   vec2 uv = gl_FragCoord.xy / 128.0;
 #if 0
@@ -333,9 +326,6 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, in float depth, out v
 #ifdef WRITE_CLOUDS_DEPTH
   vec4 x = inverse(worldCameraUnprojectionMatrix)*vec4(worldCameraPosition + dir * clouds_start_dist, 1.0);
   float clouds_depth = 0.5 + 0.5 * (x.z / x.w);
-#ifdef USE_LOGARITHMIC_DEPTH_BUFFER
-  clouds_depth = logarithmize_depth(clouds_depth);
-#endif
 
   gl_FragDepth = clouds_depth;
 #endif
